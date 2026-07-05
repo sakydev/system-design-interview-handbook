@@ -428,6 +428,30 @@ a:hover { text-decoration: underline; }
 .badge-red    { background: rgba(190,18,60,.08);  color: var(--accent4); border: 1px solid rgba(190,18,60,.2);   }
 .badge-purple { background: rgba(162,28,175,.08); color: #a21caf;        border: 1px solid rgba(162,28,175,.2);  }
 
+/* ── Prose card body (non-code content) ───────────────────────── */
+.card-body {
+  padding: 16px 20px 18px;
+  font-size: .87rem;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.card-body p { margin-bottom: 10px; }
+.card-body p:last-child { margin-bottom: 0; }
+
+.card-body ul, .card-body ol {
+  margin: 4px 0 0 20px;
+}
+
+.card-body li {
+  margin-bottom: 7px;
+  color: var(--text);
+}
+
+.card-body li:last-child { margin-bottom: 0; }
+
+.card-body strong { color: var(--text); }
+
 /* ── Code Block ────────────────────────────────────────────── */
 .code-wrap {
   position: relative;

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Process | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Design <span>Process</span></h1>
+  <p>How to run the interview itself: clarify, estimate, find the bottleneck, design, then defend it.</p>
+  <div class="hero-pills">
+    <span>Requirements</span>
+    <span>Bottlenecks</span>
+    <span>High-level design</span>
+    <span>Tradeoffs</span>
+    <span>Failure modes</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html" class="active"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Communication</div>
+    <ul class="pkg-list">
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Scalability</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+    </ul>
+
+    <div class="nav-group">Observability</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+    </ul>
+
+    <div class="nav-group">Security &amp; Regions</div>
+    <ul class="pkg-list">
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. FRAMEWORK ──────────────────────────────────────────── -->
+    <section class="section" id="framework">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🧭</div>
+        <h2>The Interview Framework</h2>
+        <span class="section-tag">5 stages · 45 minutes</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A system design interview is not a test of whether you can draw the "correct" architecture. There isn't one. It's a test of how you think under ambiguity: whether you ask the right questions, whether you can back a decision with a number, and whether you notice the thing that breaks before your interviewer does.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  1. Requirements     2. Estimation      3. High-Level      4. Deep Dive        5. Wrap-Up
+  ┌─────────────┐     ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+  │ Functional  │────▶│ QPS         │───▶│ Boxes and   │───▶│ Pick 1-2    │───▶│ Bottlenecks │
+  │ Non-func.   │     │ Storage     │    │ arrows      │    │ components  │    │ Failure     │
+  │ Scope       │     │ Bandwidth   │    │ Data flow   │    │ Go deep     │    │ modes       │
+  └─────────────┘     └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+     ~5 min               ~5 min             ~10 min            ~15 min           ~10 min</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Treat the time budget as a guide, not a script. If the interviewer keeps steering you back to one component, that's a signal about what they want to grade you on. Follow it instead of the clock.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. REQUIREMENTS ───────────────────────────────────────── -->
+    <section class="section" id="requirements">
+      <div class="section-header">
+        <div class="section-icon icon-green">❓</div>
+        <h2>Clarifying Requirements</h2>
+        <span class="section-tag">functional · non-functional · scope</span>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Functional requirements</span>
+            <span class="card-badge badge-green">What it does</span>
+          </div>
+          <div class="card-body">
+            <p>The actions a user or another service can take. Get these from the interviewer directly, don't guess.</p>
+            <ul>
+              <li>Who are the users, and what are the two or three core actions they take?</li>
+              <li>What's explicitly out of scope for this session?</li>
+              <li>Is there an existing system this replaces, or is it greenfield?</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Non-functional requirements</span>
+            <span class="card-badge badge-green">How well it does it</span>
+          </div>
+          <div class="card-body">
+            <p>These decide the entire shape of the design, so pin them down before you draw anything.</p>
+            <ul>
+              <li>Read-heavy or write-heavy? What's the rough ratio?</li>
+              <li>Latency budget: is this on the user-facing request path, or can it be async?</li>
+              <li>Consistency: is stale data tolerable, or does every read need the latest write?</li>
+              <li>Scale: how many users, how much data, growth rate over the next year?</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Don't let this stage run long. Five minutes is enough to pin down scope and the two or three requirements that will actually drive your design. If you're still asking questions at minute ten, you're stalling.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. BOTTLENECK ─────────────────────────────────────────── -->
+    <section class="section" id="bottleneck">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🎯</div>
+        <h2>Identifying the Bottleneck</h2>
+        <span class="section-tag">before you design around it</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Every system has one resource that runs out first: disk I/O, network bandwidth, a single database's write throughput, or a hot key that funnels traffic through one node. Find it before you propose a solution. A design that scales the wrong resource is wasted effort, no matter how clean the diagram looks.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Signals that point to the real bottleneck</span>
+          <span class="card-badge badge-gold">Diagnosis</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr>
+              <th>Signal</th>
+              <th>Likely bottleneck</th>
+              <th>Direction to lean</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Reads outnumber writes 100:1 or more</td><td>Database read capacity</td><td>Caching, read replicas</td></tr>
+            <tr><td>Writes dominate, single entity updated often</td><td>Write contention, hot row</td><td>Sharding, queueing, batching</td></tr>
+            <tr><td>Payloads are large (video, images, files)</td><td>Bandwidth, storage cost</td><td>Object storage, CDN</td></tr>
+            <tr><td>Requests fan out to many services</td><td>Tail latency, cascading failure</td><td>Timeouts, circuit breakers, parallelism</td></tr>
+            <tr><td>One key or user drives disproportionate traffic</td><td>Hot partition</td><td>Key salting, dedicated capacity</td></tr>
+            <tr><td>Strict ordering or uniqueness required</td><td>Coordination overhead</td><td>Single writer, partitioned ordering</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Say the bottleneck out loud before you draw the design: "this is read-heavy, so I'm going to optimize for cache hit rate over write latency." That one sentence tells the interviewer you're designing on purpose, not assembling familiar boxes.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. HIGH-LEVEL DESIGN ──────────────────────────────────── -->
+    <section class="section" id="high-level-design">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🧱</div>
+        <h2>Sketching the High-Level Design</h2>
+        <span class="section-tag">boxes, arrows, iterate</span>
+      </div>
+
+      <div class="diagram">
+<pre>  Client ──▶ Load Balancer ──▶ API Service ──▶ Cache ──▶ Database
+                                     │                        ▲
+                                     ▼                        │
+                               Message Queue ──▶ Worker ───────┘
+
+  Start here. Every box on this line should map to a requirement
+  you already named. Add nothing the interviewer hasn't asked for.</pre>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Start wide and shallow: one box per major responsibility, one arrow per data flow. Narrate as you draw, so the interviewer can redirect you before you've sunk five minutes into a corner they don't care about.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">A working order for the sketch</span>
+          <span class="card-badge badge-purple">Sequence</span>
+        </div>
+        <div class="card-body">
+          <ol>
+            <li>Client and entry point (load balancer, API gateway, CDN if relevant).</li>
+            <li>The service or services that own the core logic.</li>
+            <li>The datastore, and why you picked it over the alternatives.</li>
+            <li>Anything asynchronous: queues, background workers, event streams.</li>
+            <li>Only then: caching, replication, and the layers that exist purely for scale.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Resist adding a cache, a queue, and three microservices before you've justified why the simple version fails. Complexity you can't defend under questioning reads as pattern-matching, not design.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. TRADEOFFS ──────────────────────────────────────────── -->
+    <section class="section" id="tradeoffs">
+      <div class="section-header">
+        <div class="section-icon icon-red">🎛</div>
+        <h2>Naming the Tradeoffs</h2>
+        <span class="section-tag">every decision costs something</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>There is no free decision in distributed systems. Caching buys latency at the cost of staleness. Sharding buys write throughput at the cost of cross-shard queries. The interview isn't graded on which side you pick, it's graded on whether you can say what you gave up.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Tradeoff pairs worth having ready</span>
+          <span class="card-badge badge-red">Reference</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr>
+              <th>You choose</th>
+              <th>You pay with</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Caching for read speed</td><td>Stale data, invalidation complexity</td></tr>
+            <tr><td>Strong consistency</td><td>Higher latency, lower availability during partitions</td></tr>
+            <tr><td>Sharding for write throughput</td><td>Cross-shard joins and transactions get hard</td></tr>
+            <tr><td>Async processing via queues</td><td>Eventual consistency, harder debugging</td></tr>
+            <tr><td>Microservices for team autonomy</td><td>Network calls replace function calls, more failure surface</td></tr>
+            <tr><td>Denormalization for read speed</td><td>Write amplification, data can drift out of sync</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>When you propose something, finish the sentence: "I'm choosing X, which costs us Y, and I think that's the right trade because Z." That third clause is the part most candidates skip, and it's the part that separates a senior answer from a memorized one.</div>
+      </div>
+    </section>
+
+    <!-- ── 6. FAILURE MODES ──────────────────────────────────────── -->
+    <section class="section" id="failure-modes">
+      <div class="section-header">
+        <div class="section-icon icon-red">⚠️</div>
+        <h2>Enumerating Failure Modes</h2>
+        <span class="section-tag">before you call it done</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A design isn't finished when the happy path works. It's finished when you've walked through what happens when a piece of it dies. Spend the last few minutes here even if nobody asks: it's the part that shows you've operated something in production, not just read about it.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Questions to run against your own design</span>
+          <span class="card-badge badge-red">Checklist</span>
+        </div>
+        <div class="card-body">
+          <ul>
+            <li>What happens if any single node in this diagram goes down right now?</li>
+            <li>What happens if the network between two of your services partitions?</li>
+            <li>What happens if one client retries aggressively? Does it make things worse?</li>
+            <li>What happens if a downstream dependency slows down instead of failing outright?</li>
+            <li>Is there a single point of failure you introduced for simplicity? Say so out loud.</li>
+            <li>If this component fails, does the rest of the system degrade gracefully, or does it fail hard?</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>You don't need to solve every failure mode you name. Naming it and stating how you'd address it given more time is often enough. Silence is the only wrong answer here.</div>
+      </div>
+    </section>
+
+    <!-- ── 7. MISTAKES ───────────────────────────────────────────── -->
+    <section class="section" id="mistakes">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🚫</div>
+        <h2>Common Mistakes</h2>
+        <span class="section-tag">what pulls the score down</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Patterns that read poorly, even with a solid design</span>
+          <span class="card-badge badge-gold">Anti-patterns</span>
+        </div>
+        <div class="card-body">
+          <ul>
+            <li><strong>Designing before clarifying.</strong> Jumping to a diagram before you know the scale or the read/write ratio means redesigning later, in front of the interviewer.</li>
+            <li><strong>Reciting a template.</strong> Load balancer, cache, message queue, sharded database, in that order, on every question, regardless of whether the requirements call for them.</li>
+            <li><strong>Never doing the math.</strong> "It should scale" is not a number. Back your capacity claims with a QPS or storage estimate, even a rough one.</li>
+            <li><strong>Going deep on one component too early.</strong> Spending fifteen minutes on database schema before the interviewer has seen the whole system leaves no time for the parts they actually wanted to probe.</li>
+            <li><strong>Silence on tradeoffs.</strong> Presenting a design as though it has no downsides signals you haven't operated one, or haven't thought past the diagram.</li>
+            <li><strong>Ignoring the interviewer's redirects.</strong> If they keep asking about one part, that's the part to go deep on, not a detour from your plan.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ───────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">stage-by-stage cheat sheet</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Time</th>
+            <th>Goal</th>
+            <th>Avoid</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Requirements</td><td>~5 min</td><td>Pin down scope, functional and non-functional needs</td><td>Open-ended questioning with no end point</td></tr>
+          <tr><td>Estimation</td><td>~5 min</td><td>Rough QPS, storage, bandwidth numbers</td><td>Skipping the math entirely</td></tr>
+          <tr><td>High-level design</td><td>~10 min</td><td>One box per responsibility, narrated as you draw</td><td>Adding components nobody asked for</td></tr>
+          <tr><td>Deep dive</td><td>~15 min</td><td>One or two components, in the direction the interviewer steers</td><td>Going deep on the wrong thing for too long</td></tr>
+          <tr><td>Wrap-up</td><td>~10 min</td><td>Bottlenecks, failure modes, tradeoffs made explicit</td><td>Ending on the happy path with no caveats</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <nav class="toc-nav">
+    <div class="toc-title">On this page</div>
+    <ul class="toc">
+      <li><a href="#framework">1: The Interview Framework</a></li>
+      <li><a href="#requirements">2: Clarifying Requirements</a></li>
+      <li><a href="#bottleneck">3: Identifying the Bottleneck</a></li>
+      <li><a href="#high-level-design">4: Sketching the High-Level Design</a></li>
+      <li><a href="#tradeoffs">5: Naming the Tradeoffs</a></li>
+      <li><a href="#failure-modes">6: Enumerating Failure Modes</a></li>
+      <li><a href="#mistakes">7: Common Mistakes</a></li>
+      <li><a href="#reference">99: Quick Reference</a></li>
+    </ul>
+  </nav>
+
+</div>
+
+</body>
+</html>
