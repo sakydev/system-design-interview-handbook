@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scaling Patterns | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Scaling <span>Patterns</span></h1>
+  <p>The standard moves, in the order you reach for them. Each step named with the bottleneck that forces it.</p>
+  <div class="hero-pills">
+    <span>Vertical vs horizontal</span>
+    <span>Statelessness</span>
+    <span>The sequence</span>
+    <span>Autoscaling</span>
+    <span>Rate limiting</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. VERTICAL vs HORIZONTAL ──────────────────────────────── -->
+    <section class="section" id="v-vs-h">
+      <div class="section-header">
+        <div class="section-icon icon-blue">↕️</div>
+        <h2>Vertical vs Horizontal</h2>
+        <span class="section-tag">bigger box, or more boxes</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p><strong>Vertical</strong> scaling buys a bigger machine — more CPU, RAM, faster disk. <strong>Horizontal</strong> scaling adds more machines and spreads load across them. The industry reflex is "scale horizontally," but vertical is underrated early: it's a config change, no distributed-systems complexity, and modern hardware is enormous.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Vertical scaling has two hard limits. There's a <strong>ceiling</strong> — the biggest box money can buy — and a single machine is a <strong>single point of failure</strong>, no matter how large. Horizontal scaling removes both: near-limitless growth and redundancy built in. So vertical first for simplicity, horizontal when you hit the ceiling or need the redundancy. Both are legitimate; naming which limit you're solving for is the point.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. STATELESSNESS ───────────────────────────────────────── -->
+    <section class="section" id="stateless">
+      <div class="section-header">
+        <div class="section-icon icon-green">🎈</div>
+        <h2>Statelessness</h2>
+        <span class="section-tag">the property that makes horizontal trivial</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Horizontal scaling is easy only if any server can handle any request. That requires <strong>statelessness</strong>: the server holds no per-user data between requests, so the load balancer can route freely and you can add or kill nodes at will. The instant a server remembers something a client depends on, you've pinned that client to that server and lost the freedom.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  MOVE STATE OFF THE APP SERVER:
+
+     session data ─▶ Redis / signed JWT      (not local memory)
+     uploaded files ─▶ object storage         (not local disk)
+     local cache ─▶ treated as best-effort     (a miss is fine, never a source of truth)
+
+  result: every app server is interchangeable → add/remove nodes freely,
+          the load balancer routes anywhere</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The work is pushing state out: sessions into Redis or a signed JWT (<a href="security-basics.html">Security</a>), files into object storage (<a href="specialized-stores.html">Data Stores</a>), and any local cache treated as a disposable optimization, never the truth. Do that and app servers become cattle — interchangeable, replaceable, scalable by the dozen.</p>
+      </div>
+    </section>
+
+    <!-- ── 3. THE SEQUENCE ────────────────────────────────────────── -->
+    <section class="section" id="sequence">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🪜</div>
+        <h2>The Scaling Sequence</h2>
+        <span class="section-tag">each step forced by a specific bottleneck</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Systems scale in a well-worn order. The value isn't memorizing it — it's naming the bottleneck that forces each step, because that's the reasoning an interviewer grades.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  1. One server (app + DB together)
+        │  bottleneck: they compete for CPU/memory
+  2. Split the database onto its own machine
+        │  bottleneck: one app server maxes out
+  3. Load balancer + N stateless app servers
+        │  bottleneck: repeated reads hammer the DB
+  4. Add a cache layer (Redis in front of the DB)
+        │  bottleneck: read QPS still exceeds one DB
+  5. Read replicas (spread reads across copies)
+        │  bottleneck: slow work blocks request threads
+  6. Move heavy work to async queues + workers
+        │  bottleneck: one DB can't hold the data / write load
+  7. Shard the database</pre>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Move</th><th>Forced by</th><th>See</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Separate DB</td><td>App and DB contend on one box</td><td>—</td></tr>
+          <tr><td>LB + app servers</td><td>One app server saturated</td><td><a href="service-discovery.html">Discovery</a></td></tr>
+          <tr><td>Cache layer</td><td>Repeated reads on the DB</td><td><a href="caching.html">Caching</a></td></tr>
+          <tr><td>Read replicas</td><td>Read QPS past one node</td><td><a href="replication.html">Replication</a></td></tr>
+          <tr><td>Async queues</td><td>Slow work blocking threads</td><td><a href="messaging.html">Messaging</a></td></tr>
+          <tr><td>Sharding</td><td>Write/storage past one node</td><td><a href="sharding-partitioning.html">Sharding</a></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Don't recite all seven steps at the start of a design. Reach for each one when your estimate shows the current design failing on a specific number (<a href="estimation.html">Estimation</a>). "Read QPS from my estimate is 50K, past what one Postgres node serves, so I'd add read replicas here" is worth more than listing the whole ladder up front.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. AUTOSCALING ─────────────────────────────────────────── -->
+    <section class="section" id="autoscaling">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🔄</div>
+        <h2>Autoscaling</h2>
+        <span class="section-tag">scale-in is the dangerous direction</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Autoscaling adds and removes instances based on a metric — CPU, request rate, queue depth. Two realities make it trickier than "set a target and forget."</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Warm-up lag</span>
+            <span class="card-badge badge-purple">scale-out is slow</span>
+          </div>
+          <div class="card-body">
+            <p>A new instance isn't instant — it boots, pulls code, warms caches and connection pools. If you scale out only once you're saturated, the new capacity arrives after the spike hurt. Keep <strong>headroom</strong>: run above bare minimum so you can absorb a burst while new nodes warm.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Scale-in danger</span>
+            <span class="card-badge badge-red">removing capacity</span>
+          </div>
+          <div class="card-body">
+            <p>Scaling in too aggressively removes a node just before the next spike, or drops in-flight requests. Scale in slowly and conservatively — it's cheaper to run a little extra than to be caught short. Drain connections before terminating (<a href="realtime.html">Real-Time</a>).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 5. RATE LIMITING ───────────────────────────────────────── -->
+    <section class="section" id="rate-limiting">
+      <div class="section-header">
+        <div class="section-icon icon-red">🚦</div>
+        <h2>Rate Limiting &amp; Throttling</h2>
+        <span class="section-tag">protecting the system from its clients</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Scaling handles legitimate load; rate limiting handles the rest — abusive clients, runaway scripts, retry storms. It caps how many requests a client can make in a window, enforced at the gateway so bad traffic dies before it reaches your services (<a href="service-discovery.html">Discovery</a>). Four algorithms, differing mainly in how they handle bursts.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Algorithm</th><th>How it works</th><th>Burst behavior</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Token bucket</td><td>Tokens refill at a steady rate; each request spends one</td><td>Allows bursts up to bucket size</td></tr>
+          <tr><td>Leaky bucket</td><td>Requests queue and drain at a fixed rate</td><td>Smooths bursts into a steady flow</td></tr>
+          <tr><td>Fixed window</td><td>Count per clock window (per minute)</td><td>Spike at window edges (double at the boundary)</td></tr>
+          <tr><td>Sliding window</td><td>Rolling count over the last N seconds</td><td>Smooth, no edge spike; more state</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div><strong>Token bucket</strong> is the common default — it allows short bursts (good UX) while capping the sustained rate. Enforce at the gateway, return <code>429</code> with a <code>Retry-After</code> header so well-behaved clients back off (<a href="apis.html">APIs</a>). This is the heart of the Rate Limiter case study (<a href="rate-limiter.html">Rate Limiter</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">bottleneck → move, and rate-limit algorithms</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Bottleneck</th><th>Move</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>App + DB contend</td><td>Separate the database</td></tr>
+          <tr><td>App server saturated</td><td>Load balancer + stateless app servers</td></tr>
+          <tr><td>Repeated reads on DB</td><td>Cache layer</td></tr>
+          <tr><td>Read QPS past one node</td><td>Read replicas</td></tr>
+          <tr><td>Slow work blocks threads</td><td>Async queues + workers</td></tr>
+          <tr><td>Write/storage past one node</td><td>Shard</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Rate limit</th><th>Burst</th><th>Best for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Token bucket</td><td>Allowed, capped</td><td>General default, good UX</td></tr>
+          <tr><td>Leaky bucket</td><td>Smoothed away</td><td>Steady downstream load</td></tr>
+          <tr><td>Fixed window</td><td>Edge spike</td><td>Simple, approximate</td></tr>
+          <tr><td>Sliding window</td><td>Smooth</td><td>Accuracy, at more state cost</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Vertical first for simplicity, horizontal when you hit the ceiling or need redundancy. Statelessness is what makes horizontal easy — push sessions, files, and cache off the app server. Reach for each scaling step only when a number forces it. Autoscale with headroom and scale in cautiously. Rate-limit at the gateway; token bucket is the sane default.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Microservices | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Microservices</h1>
+  <p>When to split a system, and when splitting is the wrong call. The costs are real and mostly organizational — start with a monolith.</p>
+  <div class="hero-pills">
+    <span>Monolith first</span>
+    <span>What they buy</span>
+    <span>What they cost</span>
+    <span>Boundaries</span>
+    <span>Strangler fig</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. MONOLITH FIRST ──────────────────────────────────────── -->
+    <section class="section" id="monolith-first">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🧱</div>
+        <h2>Monolith First</h2>
+        <span class="section-tag">the default nobody defends enough</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The right default is a well-structured monolith: one deployable unit with clean internal modules. It's not the primitive option — it's the one that keeps the things microservices throw away. Calls between modules are local function calls (fast, no partial failure). A change spanning two areas is one atomic database transaction. There's one thing to deploy, one place to debug, one log to read.</p>
+        <p>Most systems don't die from lack of scale. They die from complexity. A monolith you can reason about beats a distributed system you can't.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The senior move is a <strong>modular monolith</strong>: enforce clean module boundaries inside one deployable, so the seams are ready if you ever need to split. You get organizational clarity now and cheap extraction later, without paying the distributed-systems tax before you have to.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. WHAT THEY BUY ───────────────────────────────────────── -->
+    <section class="section" id="buy">
+      <div class="section-header">
+        <div class="section-icon icon-green">💳</div>
+        <h2>What Microservices Actually Buy</h2>
+        <span class="section-tag">and why the driver is usually people</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Microservices deliver real benefits — just fewer, and later, than the hype suggests.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Benefit</th><th>What it means</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Independent deploys</td><td>Ship one service without redeploying the whole system</td></tr>
+          <tr><td>Independent scaling</td><td>Scale the hot service alone instead of the entire app</td></tr>
+          <tr><td>Team autonomy</td><td>A team owns a service end to end, chooses its own stack and pace</td></tr>
+          <tr><td>Fault isolation</td><td>One service crashing needn't take the others down (with the right patterns)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The honest driver is usually <strong>organizational, not technical</strong>. This is Conway's law — systems mirror the communication structure of the org that builds them. Microservices let many teams ship without stepping on each other. A five-person team doesn't have that problem, so it doesn't need that solution. If the reason to split is "so teams stop blocking each other," say so; that's more convincing than a vague scaling claim.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. WHAT THEY COST ──────────────────────────────────────── -->
+    <section class="section" id="cost">
+      <div class="section-header">
+        <div class="section-icon icon-red">💸</div>
+        <h2>What They Cost</h2>
+        <span class="section-tag">every local call becomes a network call</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Splitting turns in-process certainties into distributed problems. The costs are concrete, and they show up on day one, not at scale.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  MONOLITH                              MICROSERVICES
+  order.charge(card)                    POST http://payment/charge
+   ├─ function call: ~nanoseconds        ├─ network call: ~milliseconds
+   ├─ either returns or throws           ├─ may time out, retry, half-fail
+   └─ one DB transaction wraps it all    └─ no shared transaction (saga needed)</pre>
+      </div>
+
+      <table class="ref-table" style="margin-top:4px">
+        <thead>
+          <tr><th>Cost</th><th>Bites you as</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Network everywhere</td><td>Latency, timeouts, partial failure on every call (<a href="resilience-patterns.html">Resilience</a>)</td></tr>
+          <tr><td>Distributed transactions</td><td>No cross-service ACID — sagas and compensation (<a href="distributed-transactions.html">Transactions</a>)</td></tr>
+          <tr><td>Operational surface</td><td>Many deploys, dashboards, versioned contracts, tracing (<a href="metrics-logs-traces.html">Telemetry</a>)</td></tr>
+          <tr><td>Local dev pain</td><td>Running twelve services to test one feature</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The trap is a <strong>distributed monolith</strong>: services split apart but so chatty and tightly coupled that you pay every cost of distribution and get none of the independence. If deploying service A always requires deploying B, you built the worst of both. The boundaries were wrong.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. BOUNDARIES ──────────────────────────────────────────── -->
+    <section class="section" id="boundaries">
+      <div class="section-header">
+        <div class="section-icon icon-purple">📐</div>
+        <h2>Drawing Boundaries</h2>
+        <span class="section-tag">around capabilities, not entities</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Split around <strong>business capabilities</strong> — checkout, search, notifications — not around database entities. A capability owns its data and exposes behavior; an entity-shaped service ("the User service") ends up called by everyone for everything and becomes a shared bottleneck.</p>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The load-bearing rule is <strong>database-per-service</strong>. Each service owns its data and no other service touches that database directly — access goes through the API. Share a database and you've recoupled everything: a schema change in one service breaks another, and you're back to a monolith with network calls in the middle. Getting data across boundaries then happens three ways: synchronous <strong>API calls</strong>, <strong>events</strong> for async propagation (<a href="messaging.html">Messaging</a>), or maintaining a local <strong>read replica</strong> of another service's data via its event stream.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  RIGHT: each service owns its store        WRONG: shared database
+  ┌─────────┐  ┌─────────┐  ┌─────────┐     ┌─────────┐ ┌─────────┐
+  │ orders  │  │ payment │  │ search  │     │ orders  │ │ payment │
+  │  ↓ own  │  │  ↓ own  │  │  ↓ own  │     └────┬────┘ └────┬────┘
+  │  DB     │  │  DB     │  │  DB     │          └────┬──────┘
+  └─────────┘  └─────────┘  └─────────┘          ┌────┴────┐
+   cross-service data via API / events           │ shared DB│ ← recouples both:
+                                                  └─────────┘   a schema change
+                                                                breaks everyone</pre>
+      </div>
+    </section>
+
+    <!-- ── 5. DECOMPOSITION ───────────────────────────────────────── -->
+    <section class="section" id="decomposition">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🌱</div>
+        <h2>Decomposition Path</h2>
+        <span class="section-tag">strangler fig, never a big-bang rewrite</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>You don't rewrite a monolith into microservices in one heroic push — that's how projects die. The <strong>strangler fig</strong> pattern extracts incrementally: route one capability at a time out to a new service, leave the rest in the monolith, and repeat. A routing layer sends the extracted paths to the new service and everything else to the old code, so the system keeps running throughout.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Big-bang rewrites fail because you freeze the old system, build the new one for a year, and discover at cutover that the requirements moved and the edge cases were undocumented. Extracting one route at a time keeps every step small, reversible, and shippable. Never propose "we'll rewrite it as microservices" as a plan.</div>
+      </div>
+    </section>
+
+    <!-- ── 6. IN THE INTERVIEW ────────────────────────────────────── -->
+    <section class="section" id="interview">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🎤</div>
+        <h2>In the Interview</h2>
+        <span class="section-tag">don't default to microservices</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Reaching for microservices unprompted reads as pattern-matching, not judgment. The senior answer names the tradeoff and defers the split until a requirement forces it.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The line to have ready: <strong>"I'd start with a modular monolith and split X out when Y."</strong> For example: "one service until the payment flow needs its own scaling and an independent deploy cadence, then I'd extract payments first because it has the clearest boundary and the strictest reliability needs." That shows you know microservices <em>and</em> that you won't reach for them before there's a reason (<a href="tradeoffs.html">Tradeoffs</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">monolith vs microservices</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Monolith</th><th>Microservices</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Calls</td><td>Local, fast, reliable</td><td>Network — latency, partial failure</td></tr>
+          <tr><td>Transactions</td><td>Real ACID across the app</td><td>Sagas, eventual consistency</td></tr>
+          <tr><td>Deploy</td><td>One unit</td><td>Independent per service</td></tr>
+          <tr><td>Scaling</td><td>Whole app together</td><td>Per service</td></tr>
+          <tr><td>Teams</td><td>Coordinate on one codebase</td><td>Autonomous per service</td></tr>
+          <tr><td>Ops burden</td><td>Low</td><td>High — many moving parts</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Signals you're ready to split</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Teams block each other on one codebase / deploy pipeline</td></tr>
+          <tr><td>One component needs radically different scaling than the rest</td></tr>
+          <tr><td>Parts have conflicting reliability or tech requirements</td></tr>
+          <tr><td>The monolith's build/test/deploy cycle has become the bottleneck</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Start with a modular monolith; most systems die of complexity, not scale. Microservices buy independent deploy, scaling, and team autonomy — the real driver is usually organizational (Conway's law). They cost network calls, distributed transactions, and ops surface. Split around business capabilities with a database per service; never share a database. Extract incrementally with the strangler fig, never a big-bang rewrite.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

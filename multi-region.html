@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Region | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Multi-Region</h1>
+  <p>What breaks when you leave one data center. Failover, active-active writes, data residency, and why regions must be islands.</p>
+  <div class="hero-pills">
+    <span>Active-passive</span>
+    <span>Active-active</span>
+    <span>RTO / RPO</span>
+    <span>Data residency</span>
+    <span>The write problem</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHY ─────────────────────────────────────────────────── -->
+    <section class="section" id="why">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🌍</div>
+        <h2>Why Go Multi-Region</h2>
+        <span class="section-tag">three drivers, three different designs</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Multi-region is expensive and complex, so the first question is <em>why</em> — because each reason implies a different design.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Driver</th><th>What it demands</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Latency to global users</td><td>Serve each user from a nearby region — active-active</td></tr>
+          <tr><td>Disaster recovery</td><td>A standby that survives losing a region — active-passive</td></tr>
+          <tr><td>Data residency law</td><td>Keep certain data in certain jurisdictions — regional partitioning</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Pin down the driver before designing. "Multi-region for low global latency" and "multi-region for DR" are different systems — one needs local writes everywhere, the other needs a warm standby. Ask which one, or state your assumption, before drawing regions (<a href="design-process.html">Design Process</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 2. ACTIVE-PASSIVE ──────────────────────────────────────── -->
+    <section class="section" id="active-passive">
+      <div class="section-header">
+        <div class="section-icon icon-green">🛟</div>
+        <h2>Active-Passive</h2>
+        <span class="section-tag">a standby that waits for disaster</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>One region serves all traffic; a second stands by, kept current by replication. If the primary dies, you promote the standby. Simpler than active-active because only one region takes writes — no conflicts. The two numbers that define it are RTO and RPO.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  ┌────────────┐   async replication    ┌────────────┐
+  │  PRIMARY    │ ─────────────────────▶ │  STANDBY    │
+  │  all traffic│                        │  idle, warm │
+  └────────────┘   ◀── failover ──▶      └────────────┘
+
+  RTO — Recovery Time Objective: how long until you're back up (failover speed)
+  RPO — Recovery Point Objective: how much data you can lose (replication lag)
+        the async lag IS your data-loss window</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>A failover path that's never tested doesn't work — DNS is stale, the standby's capacity was quietly scaled down, a config drifted. Untested DR is theater. And the replication lag is a real data-loss window: with async replication, writes acked by the primary but not yet shipped are gone when you promote (<a href="replication.html">Replication</a>). RPO isn't zero unless you paid for synchronous replication and its latency.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. ACTIVE-ACTIVE ───────────────────────────────────────── -->
+    <section class="section" id="active-active">
+      <div class="section-header">
+        <div class="section-icon icon-gold">⚡</div>
+        <h2>Active-Active</h2>
+        <span class="section-tag">every region serves — and the write problem</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Every region serves live traffic, each user hitting the nearest one. Reads are easy — a local replica in each region. Writes are the whole difficulty, and there are three ways to handle them.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Write approach</th><th>How</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Single global write region</td><td>All writes route to one region; others read local</td><td>Distant users pay latency on every write</td></tr>
+          <tr><td>Region-local writes</td><td>Each region takes writes, replicates to others</td><td>Write conflicts — needs resolution (<a href="replication.html">multi-leader</a>)</td></tr>
+          <tr><td>Partition by home region</td><td>Each user's data lives in their home region</td><td>Cross-region access is slow / complex</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Partitioning users by home region is often the cleanest: a user's writes always go to their own region, so there's no conflict, and only the rare cross-region interaction pays the price. It sidesteps the conflict problem instead of solving it — which is usually the better trade (<a href="tradeoffs.html">Tradeoffs</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 4. DATA RESIDENCY ──────────────────────────────────────── -->
+    <section class="section" id="residency">
+      <div class="section-header">
+        <div class="section-icon icon-purple">⚖️</div>
+        <h2>Data Residency</h2>
+        <span class="section-tag">the law decides where bytes live</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Regulations like GDPR can require that data about EU users physically stays in the EU. That forces <strong>regional partitioning</strong>: each user's personal data is pinned to their jurisdiction, with only non-personal or aggregated metadata replicated globally.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Residency quietly breaks global queries. "Show me all users sorted by signup date" can no longer hit one table — the data is scattered across jurisdictions that legally can't be merged in one place. You answer such queries by querying each region and merging, or by keeping a separate, legally-clean global index of non-personal fields. Naming that consequence shows you understand residency isn't just a storage location, it reshapes every cross-region read.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. ROUTING ─────────────────────────────────────────────── -->
+    <section class="section" id="routing">
+      <div class="section-header">
+        <div class="section-icon icon-red">🧭</div>
+        <h2>Routing Users to Regions</h2>
+        <span class="section-tag">getting them to the right one, and off a dead one</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Two mechanisms send users to a region. <strong>GeoDNS</strong> resolves the domain to the nearest region's address; <strong>anycast</strong> advertises one IP from many locations and lets the network route to the closest, reacting faster than DNS with no TTL wait (<a href="service-discovery.html">Discovery</a>).</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>When a region dies, in-flight sessions there are simply gone — routing sends new requests elsewhere, but anything mid-flight is lost unless the client retries. This is why session state belongs in a store, not on a regional server, and why clients need retry-with-backoff: the region a user was pinned to can vanish between two requests (<a href="resilience-patterns.html">Resilience</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 6. THE COST ────────────────────────────────────────────── -->
+    <section class="section" id="cost">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🐢</div>
+        <h2>The Cost: Cross-Region Latency</h2>
+        <span class="section-tag">regions are islands</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The physics is unforgiving: a round trip between regions is ~100ms or more, bounded by the speed of light. Any design where serving a request means a synchronous call to another region is poisoned — that 100ms lands on every request, defeating the reason you went multi-region.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The design rule: <strong>regions are islands that sync asynchronously.</strong> A request must be servable entirely within its own region — local reads, local writes where possible — with cross-region replication happening in the background, off the request path. The moment a user request blocks on another region, you've built something slower than a single region would have been. If you find a synchronous cross-region hop in your design, that's the thing to fix.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">active-passive vs active-active</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Active-passive</th><th>Active-active</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Traffic</td><td>Primary only; standby idle</td><td>All regions serve</td></tr>
+          <tr><td>Writes</td><td>One region — no conflicts</td><td>The hard part — needs a strategy</td></tr>
+          <tr><td>RTO / RPO</td><td>Failover time / replication lag</td><td>Near-zero if partitioned right</td></tr>
+          <tr><td>Cost</td><td>Lower — standby mostly idle</td><td>Higher — full capacity everywhere</td></tr>
+          <tr><td>Complexity</td><td>Moderate; test the failover</td><td>High; conflict + residency</td></tr>
+          <tr><td>Best for</td><td>Disaster recovery</td><td>Low global latency</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Region checklist</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Pin down the driver: latency, DR, or residency?</td></tr>
+          <tr><td>Where do writes go, and how are conflicts handled?</td></tr>
+          <tr><td>No synchronous cross-region calls on the request path</td></tr>
+          <tr><td>Session state in a store, not on a regional server</td></tr>
+          <tr><td>Is the failover actually tested?</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Name the driver first — latency, DR, or residency — because each implies a different design. Active-passive for DR (watch RPO and test the failover); active-active for latency (the write problem is everything, partition by home region to dodge conflicts). Residency breaks global queries. And the rule that governs all of it: regions are islands that sync asynchronously — never a synchronous cross-region hop on the request path.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>
