@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Search</h1>
+  <p>Full-text search and the typeahead problem. Why a database can't do it, how an inverted index does, and how relevance is ranked.</p>
+  <div class="hero-pills">
+    <span>Inverted index</span>
+    <span>Tokenization</span>
+    <span>TF-IDF / BM25</span>
+    <span>Elasticsearch</span>
+    <span>Typeahead</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHY NOT LIKE ────────────────────────────────────────── -->
+    <section class="section" id="why-not-like">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🚫</div>
+        <h2>Why Not <code>LIKE '%term%'</code></h2>
+        <span class="section-tag">the moment a product needs real search</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The naive answer to search is <code>WHERE body LIKE '%term%'</code>. It fails on three counts. A leading wildcard can't use an index, so every query is a <strong>full table scan</strong> (<a href="indexing.html">Indexing</a>). There's <strong>no relevance</strong> — you get matches in arbitrary order, not best-first. And there's <strong>no tokenization</strong> — searching "running" won't find "run," "Run," or "ran," because it's dumb substring matching.</p>
+        <p>The moment a product needs to search text meaningfully, it needs a structure built for it: the inverted index.</p>
+      </div>
+    </section>
+
+    <!-- ── 2. INVERTED INDEX ──────────────────────────────────────── -->
+    <section class="section" id="inverted-index">
+      <div class="section-header">
+        <div class="section-icon icon-green">🔄</div>
+        <h2>Inverted Indexes</h2>
+        <span class="section-tag">term → the documents that contain it</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A normal index maps document → its contents. An <strong>inverted</strong> index flips it: each term maps to a <strong>posting list</strong> of the documents that contain it. Now "find documents with 'search'" is one lookup returning the list, not a scan of every document.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  Documents                          Build: tokenize → normalize → index
+  D1: "The fast fox"                   split into words │ lowercase, stem,
+  D2: "A fast car"                                      │ drop stop-words
+  D3: "The fox runs"                                    ▼
+
+  Inverted index (term → posting list):
+     fast  ─▶ [ D1, D2 ]
+     fox   ─▶ [ D1, D3 ]
+     run   ─▶ [ D3 ]        ("runs" stemmed to "run")
+     car   ─▶ [ D2 ]
+     ("the", "a" dropped as stop-words)</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Building it is a pipeline. <strong>Tokenize</strong> the text into terms, then <strong>normalize</strong>: lowercase, <strong>stem</strong> words to their root ("running" → "run"), and drop <strong>stop-words</strong> ("the," "a," "is") that carry no signal. The same pipeline runs on the query, so query and index meet in the same normalized form — which is exactly what makes "Running" match "ran."</p>
+      </div>
+    </section>
+
+    <!-- ── 3. QUERY SIDE ──────────────────────────────────────────── -->
+    <section class="section" id="query">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🔍</div>
+        <h2>The Query Side</h2>
+        <span class="section-tag">combining posting lists</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Once terms map to posting lists, queries are set operations on those lists. An <strong>AND</strong> query intersects the lists — documents that contain both terms. An <strong>OR</strong> query unions them. A <strong>phrase</strong> query ("fast fox" as an exact phrase) needs more than membership: the index must store each term's <em>position</em> within the document, so you can check the words appear adjacent and in order.</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Posting lists are kept sorted by document ID precisely so intersection and union are fast linear merges rather than nested lookups. It's the same reason sorted structures win elsewhere — order turns a search into a walk.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. RELEVANCE ───────────────────────────────────────────── -->
+    <section class="section" id="relevance">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🎯</div>
+        <h2>Relevance</h2>
+        <span class="section-tag">ranking matches best-first</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Finding matches is half the job; ordering them is the half users feel. The intuition is <strong>TF-IDF</strong>: a term matters more in a document when it appears often there (term frequency) and rarely across the whole corpus (inverse document frequency). "The" appears everywhere, so it's worthless for ranking; a rare term is a strong signal. <strong>BM25</strong> is the refined, saturating version of this idea and the default scoring function in modern engines.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Text score is only the start. Real ranking blends signals beyond the words: recency, popularity or click-through, and personalization. The honest framing in an interview is "BM25 gives the text-relevance baseline, then I'd layer business signals — recency, popularity, personalization — on top." Naming that separation shows you know search is ranking, not just matching.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. INFRASTRUCTURE ──────────────────────────────────────── -->
+    <section class="section" id="infra">
+      <div class="section-header">
+        <div class="section-icon icon-red">🏗</div>
+        <h2>Search Infrastructure</h2>
+        <span class="section-tag">Elasticsearch, shards, and staying in sync</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Elasticsearch (and OpenSearch, both on Lucene) is the standard engine. Documents are grouped into <strong>shards</strong> so the index scales horizontally, and indexing is <strong>near-real-time</strong>: new documents become searchable after a <strong>refresh interval</strong>, so there's always a small staleness window between writing and being findable.</p>
+        <p>The real design question is keeping the search index in sync with the source-of-truth database — search is a <em>derived</em> copy, never the primary store.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">CDC (the good way)</span>
+            <span class="card-badge badge-green">tail the log</span>
+          </div>
+          <div class="card-body">
+            <p>Capture changes off the database's write-ahead log and stream them into the search index. The DB commit is the single source of truth, and the index follows it reliably — nothing is missed because the log records every change (<a href="distributed-transactions.html">CDC</a>).</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Dual-write (the trap)</span>
+            <span class="card-badge badge-red">drifts</span>
+          </div>
+          <div class="card-body">
+            <p>The app writes the DB and the search index directly, in the same request. When one write succeeds and the other fails — and eventually it will — the two drift apart with no way to notice. The classic dual-write problem (<a href="distributed-transactions.html">Distributed Transactions</a>).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Never make the search engine your primary store. It's a derived index optimized for retrieval, with a refresh delay and weaker durability guarantees than your database. Write to the DB, and feed the index from it via CDC. If someone proposes dual-write, the follow-up is "what happens when the second write fails?"</div>
+      </div>
+    </section>
+
+    <!-- ── 6. TYPEAHEAD ───────────────────────────────────────────── -->
+    <section class="section" id="typeahead">
+      <div class="section-header">
+        <div class="section-icon icon-blue">⌨️</div>
+        <h2>Typeahead / Autocomplete</h2>
+        <span class="section-tag">a different problem: prefixes under 100ms</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Autocomplete looks like search but isn't. It's <strong>prefix matching</strong> under a brutal latency budget — suggestions must appear within ~100ms of a keystroke, and every keystroke is a query. The answer is precompute-heavy and read-cheap: do the work offline so serving is a trivial lookup.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  A TRIE with precomputed top-k per node:
+
+           (root)
+            └─ s
+               └─ se
+                  └─ sea ── top-k: [search, seattle, season, …]
+                     └─ sear ── top-k: [search, search engine, …]
+
+  Type "sear" → walk to that node → return its precomputed top-k. Done.
+  Suggestions are RANKED and STORED at build time, weighted by popularity.</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Each node stores the top-k completions for its prefix, ranked by popularity, computed ahead of time. Serving is a walk down the trie plus returning a cached list — no ranking at request time. Fuzzy matching (tolerating typos) and freshness of trending queries are add-ons layered on top. This is the whole shape of the Typeahead case study (<a href="typeahead.html">Typeahead</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">DB query vs search vs typeahead</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>DB <code>LIKE</code></th><th>Search engine</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Structure</td><td>B-tree (unusable with leading wildcard)</td><td>Inverted index</td></tr>
+          <tr><td>Speed</td><td>Full scan</td><td>Posting-list lookup</td></tr>
+          <tr><td>Relevance</td><td>None</td><td>BM25 + signals</td></tr>
+          <tr><td>Tokenization</td><td>None — raw substring</td><td>Stem, lowercase, stop-words</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th></th><th>Full-text search</th><th>Typeahead</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Index</td><td>Inverted index</td><td>Trie with top-k per node</td></tr>
+          <tr><td>Latency budget</td><td>Sub-second</td><td>~100ms per keystroke</td></tr>
+          <tr><td>Update pattern</td><td>Near-real-time via CDC</td><td>Precomputed offline, read-cheap</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> <code>LIKE</code> can't do search: no index, no relevance, no tokenization. An inverted index maps terms to posting lists; queries are set ops on them. BM25 for text relevance, then layer recency and popularity. Keep the search index in sync via CDC, never dual-write, and never make it the source of truth. Typeahead is a separate, precompute-heavy prefix problem with a 100ms budget.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

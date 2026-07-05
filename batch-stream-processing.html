@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batch &amp; Stream Processing | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Batch &amp; <span>Stream Processing</span></h1>
+  <p>Turning raw event streams into answers. The two paradigms, windowing over time, and the sketches that make counting at scale affordable.</p>
+  <div class="hero-pills">
+    <span>MapReduce</span>
+    <span>Stream topologies</span>
+    <span>Windowing</span>
+    <span>Watermarks</span>
+    <span>Lambda / Kappa</span>
+    <span>Sketches</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. TWO PARADIGMS ───────────────────────────────────────── -->
+    <section class="section" id="paradigms">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🌊</div>
+        <h2>The Two Paradigms</h2>
+        <span class="section-tag">bounded and slow, or unbounded and fast</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p><strong>Batch</strong> processes a bounded, finite dataset — yesterday's logs, the whole user table — in one big job. High throughput, high latency: answers arrive in minutes to hours. <strong>Stream</strong> processes an unbounded, never-ending flow of events, producing results within seconds of each event arriving.</p>
+        <p>The split is really input shape. Batch has an end; stream never does. Most real systems run both: a stream layer for fresh, approximate answers and a batch layer for complete, correct ones.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  BATCH                                 STREAM
+  [ bounded dataset ]                   …event…event…event…▶ (never ends)
+        │  run over all of it                 │  process each as it arrives
+        ▼                                      ▼
+   result in minutes–hours               result in seconds
+   high throughput, high latency         low latency, incremental
+   "daily report", "reindex everything"  "trending now", "live dashboard"</pre>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>This page sits behind questions like "design ad-click aggregation," "design trending topics," and "design a metrics pipeline." The first move on any of them is deciding how fresh the answer must be — that alone tells you batch, stream, or both.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. BATCH FUNDAMENTALS ──────────────────────────────────── -->
+    <section class="section" id="batch">
+      <div class="section-header">
+        <div class="section-icon icon-green">🗺</div>
+        <h2>Batch Fundamentals</h2>
+        <span class="section-tag">MapReduce and the shuffle</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>MapReduce is the mental model even when the engine is modern. <strong>Map</strong> transforms each input record into key-value pairs in parallel. <strong>Shuffle</strong> groups all pairs with the same key onto the same node. <strong>Reduce</strong> aggregates each group. Word count: map emits <code>(word, 1)</code>, shuffle gathers each word, reduce sums.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  input split ─▶ MAP ─▶ (k,v) pairs ─┐
+  input split ─▶ MAP ─▶ (k,v) pairs ─┼─ SHUFFLE ─▶ REDUCE ─▶ output
+  input split ─▶ MAP ─▶ (k,v) pairs ─┘  (group by key)   (aggregate)
+                  ▲                        ▲
+             parallel, cheap          the EXPENSIVE part:
+                                      moves data across the network</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The <strong>shuffle</strong> is where the cost lives — it moves data across the network to co-locate keys, and it's the bottleneck of every batch job. Modern engines like Spark keep the same map/shuffle/reduce model but run in memory and chain stages, cutting the disk round trips MapReduce paid between steps. <strong>ETL vs ELT</strong> is a related choice: transform before loading into the warehouse (ETL) or load raw and transform inside it (ELT, now the default given cheap warehouse compute).</p>
+      </div>
+    </section>
+
+    <!-- ── 3. STREAM FUNDAMENTALS ─────────────────────────────────── -->
+    <section class="section" id="stream">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🔀</div>
+        <h2>Stream Fundamentals</h2>
+        <span class="section-tag">events flowing through a topology</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Stream processing (Flink, Kafka Streams) runs events through a <strong>topology</strong> of operators — a graph of transforms, filters, and aggregations that data flows through. Operators come in two kinds, and the difference drives everything hard about streaming.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Stateless operators</span>
+            <span class="card-badge badge-green">easy</span>
+          </div>
+          <div class="card-body">
+            <p>Each event handled independently — map, filter, transform. No memory between events, so they scale trivially and recover for free. Any node can process any event.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Stateful operators</span>
+            <span class="card-badge badge-gold">the hard part</span>
+          </div>
+          <div class="card-body">
+            <p>Aggregations, joins, counts — they remember across events. That state must be partitioned by key, kept in memory, and checkpointed so it survives a crash. All the difficulty of streaming is managing this state.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Streams are fed by a durable log — the replayable Kafka partition — so a consumer can reprocess from an old offset after a bug or a new deployment. The log is the source of truth; the stream job is a materialized view over it (<a href="messaging.html">Messaging</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. WINDOWING ───────────────────────────────────────────── -->
+    <section class="section" id="windowing">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🪟</div>
+        <h2>Windowing</h2>
+        <span class="section-tag">slicing an infinite stream into finite chunks</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>You can't sum an infinite stream — you sum a <em>window</em> of it. Three shapes cover most needs, and the deep problem is which clock defines them.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Window</th><th>Shape</th><th>Use</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Tumbling</td><td>Fixed, non-overlapping (every 1 min)</td><td>Per-minute counts, clean buckets</td></tr>
+          <tr><td>Sliding</td><td>Fixed size, overlapping (5 min, every 1 min)</td><td>Moving averages, rolling metrics</td></tr>
+          <tr><td>Session</td><td>Bounded by a gap of inactivity</td><td>User sessions, bursts of activity</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The subtlety is <strong>event time vs processing time</strong>. Event time is when the event actually happened; processing time is when your system saw it. They differ because events arrive late and out of order — a phone was offline, a network stalled. Bucket by processing time and a delayed event lands in the wrong window, corrupting the count.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>A <strong>watermark</strong> is the stream's answer: a moving signal that says "we've probably now seen every event up to time T." The system holds a window open until the watermark passes, absorbing late arrivals, then closes and emits. It's a bet — set it aggressively for freshness and risk dropping stragglers, conservatively for completeness and pay latency. Naming event-time plus watermarks is the senior signal on any streaming question.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. EXACTLY-ONCE ────────────────────────────────────────── -->
+    <section class="section" id="exactly-once">
+      <div class="section-header">
+        <div class="section-icon icon-red">🎯</div>
+        <h2>Exactly-Once Processing</h2>
+        <span class="section-tag">what the claim actually means</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Streaming engines advertise "exactly-once," and it needs unpacking. Delivery over a network is at-least-once; what's achievable is exactly-once <em>effect</em>, built from three pieces: <strong>checkpointing</strong> (periodically snapshot operator state and input offsets together), <strong>replayable sources</strong> (rewind the log to the last checkpoint after a crash), and <strong>idempotent or transactional sinks</strong> (writing the same result twice has no extra effect).</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>"Exactly-once" holds <em>inside</em> the engine's managed boundary — its state and its offsets move as one atomic checkpoint. The moment output leaves for an external system, you're back to needing an idempotent or transactional sink to make replayed results harmless. Same principle as everywhere else: at-least-once delivery plus idempotency (<a href="concurrency-control.html">Concurrency Control</a>, <a href="messaging.html">Messaging</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 6. LAMBDA / KAPPA ──────────────────────────────────────── -->
+    <section class="section" id="lambda-kappa">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🏛</div>
+        <h2>Lambda and Kappa Architectures</h2>
+        <span class="section-tag">two layers, or one with replay</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p><strong>Lambda</strong> runs two layers in parallel: a batch layer that recomputes complete, correct results slowly, and a speed layer that gives fast approximate results now. Queries merge the two. The cost is maintaining the same logic twice, in two codebases that drift.</p>
+        <p><strong>Kappa</strong> drops the batch layer. Keep everything as a replayable log and use the stream engine for both: for a "recompute from scratch," just replay the log from the beginning. One codebase, one system. Given durable logs and mature stream engines, kappa is winning.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  LAMBDA                                KAPPA
+  events ─┬─▶ batch layer (slow, exact)  events ─▶ log ─▶ stream engine
+          └─▶ speed layer (fast, approx)                    │
+              │                                             ├─ live results
+              ▼                                             └─ reprocess by
+          merge at query                                       replaying the log
+   two codebases, they drift             one codebase, replay for correctness</pre>
+      </div>
+    </section>
+
+    <!-- ── 7. TOP-K & COUNTING ────────────────────────────────────── -->
+    <section class="section" id="counting">
+      <div class="section-header">
+        <div class="section-icon icon-green">🔢</div>
+        <h2>Top-K and Counting at Scale</h2>
+        <span class="section-tag">exact counting is unaffordable — say so</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>"Trending topics" and "unique visitors" sound like <code>GROUP BY</code>. At billions of events, exact answers need too much memory — a counter per distinct item, a set of every visitor ID. The move is <strong>probabilistic sketches</strong>: fixed-size structures that trade a small, bounded error for enormous memory savings.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Need</th><th>Sketch</th><th>Trades</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Frequency of each item</td><td>Count-Min Sketch</td><td>May overcount slightly, never undercounts</td></tr>
+          <tr><td>Count of distinct items</td><td>HyperLogLog</td><td>~2% error on cardinality, tiny memory</td></tr>
+          <tr><td>Top-K heavy hitters</td><td>Count-Min + a heap</td><td>Approximate ranking of the busiest keys</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card-body" style="padding-top:0">
+        <p>These merge cleanly, which is what makes them work in a distributed pipeline: each partition builds its own sketch, and you combine them into a global answer without re-scanning the data. Count per window (tumbling or sliding), keep heavy hitters per window, merge across partitions.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The strong answer to "how do you count trending hashtags across billions of events" is not a giant hash map. It's "exact counting is unaffordable at this scale, so I'd use a count-min sketch for frequencies and HyperLogLog for uniques, per time window, merged across partitions." Naming the sketch is the whole point.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">paradigms, windows, and question-shapes</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Batch</th><th>Stream</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Input</td><td>Bounded, finite</td><td>Unbounded, continuous</td></tr>
+          <tr><td>Latency</td><td>Minutes to hours</td><td>Seconds</td></tr>
+          <tr><td>Throughput</td><td>Very high</td><td>Incremental</td></tr>
+          <tr><td>Tools</td><td>Spark, MapReduce</td><td>Flink, Kafka Streams</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Question shape</th><th>Technique</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>"Trending / top-K now"</td><td>Count-Min + heap, over windows</td></tr>
+          <tr><td>"Unique visitors / distinct count"</td><td>HyperLogLog</td></tr>
+          <tr><td>"Moving average / rolling metric"</td><td>Sliding window</td></tr>
+          <tr><td>"Daily report / full recompute"</td><td>Batch layer</td></tr>
+          <tr><td>"Late, out-of-order events"</td><td>Event time + watermarks</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Batch is bounded and slow; stream is unbounded and fast; most systems need both. Shuffle is the cost of batch. Stateful stream operators need checkpointing; event-time windows need watermarks for late data. Exactly-once means at-least-once plus idempotent sinks. Kappa (one replayable log) is beating Lambda (two drifting layers). At scale, count with sketches, not hash maps.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>
