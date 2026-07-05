@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security Basics | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Security <span>Basics</span></h1>
+  <p>Enough security to design responsibly. Authentication, authorization, encryption, secrets, and the perimeter — interview depth, not a course.</p>
+  <div class="hero-pills">
+    <span>AuthN vs AuthZ</span>
+    <span>Sessions vs JWT</span>
+    <span>TLS / mTLS</span>
+    <span>Hashing</span>
+    <span>Secrets</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. AUTHENTICATION ──────────────────────────────────────── -->
+    <section class="section" id="authn">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🪪</div>
+        <h2>Authentication</h2>
+        <span class="section-tag">who are you — sessions vs JWTs</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Authentication proves identity. After login, the server issues something the client presents on later requests, and the two dominant approaches differ in <em>where the state lives</em>.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  SESSION + COOKIE                       JWT (JSON Web Token)
+  server stores session, sends an ID     server signs a token holding the claims
+     client ─cookie(id)─▶ server            client ─token─▶ server
+     server looks up id in session store    server verifies the SIGNATURE, no lookup
+     ▶ state on the SERVER                   ▶ state in the TOKEN (stateless)
+     ▶ revoke = delete the session (easy)    ▶ revoke = hard (valid till it expires)</pre>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Sessions</th><th>JWT</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>State</td><td>Server-side store</td><td>In the token, stateless</td></tr>
+          <tr><td>Scaling</td><td>Needs a shared session store</td><td>Any server verifies alone</td></tr>
+          <tr><td>Revocation</td><td>Easy — delete the session</td><td>Hard — valid until expiry</td></tr>
+          <tr><td>Best for</td><td>Classic web apps</td><td>APIs, microservices, mobile</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The JWT revocation problem is the tell. Because a signed token is valid until it expires, you can't instantly revoke it — so keep access tokens <strong>short-lived</strong> (minutes) and pair them with a longer-lived <strong>refresh token</strong> you can revoke at the store. <strong>OAuth2 / OIDC</strong> is the standard for delegated authorization — "sign in with Google" hands you a token without the app ever seeing the password.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. AUTHORIZATION ───────────────────────────────────────── -->
+    <section class="section" id="authz">
+      <div class="section-header">
+        <div class="section-icon icon-green">🚦</div>
+        <h2>Authorization</h2>
+        <span class="section-tag">what are you allowed to do</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Authentication is who you are; <strong>authorization</strong> is what you're allowed to do. Different problems, often conflated. A valid login (authN) doesn't mean you can delete another user's data (authZ). <strong>RBAC</strong> — role-based access control — is the default model: assign users roles, grant permissions to roles, check the role on each action.</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Enforce at two levels. The <strong>gateway</strong> does coarse checks — is this token valid, does this role reach this service at all — cheaply at the edge. The <strong>service</strong> does fine-grained checks it alone can make: does <em>this</em> user own <em>this</em> specific record. The gateway can't know the second; never rely on it for object-level authorization (<a href="service-discovery.html">Discovery</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 3. ENCRYPTION ──────────────────────────────────────────── -->
+    <section class="section" id="encryption">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🔐</div>
+        <h2>Encryption</h2>
+        <span class="section-tag">in transit, at rest, and hashing</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Two states to protect, plus one thing that isn't encryption at all.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">In transit</span>
+            <span class="card-badge badge-gold">TLS everywhere</span>
+          </div>
+          <div class="card-body">
+            <p>TLS on every connection, including service-to-service. In a zero-trust design, internal calls use <strong>mTLS</strong> — both sides present certificates, so services mutually authenticate and the internal network isn't assumed safe (<a href="networking-basics.html">TLS</a>).</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">At rest</span>
+            <span class="card-badge badge-blue">disk and field</span>
+          </div>
+          <div class="card-body">
+            <p>Disk and database encryption protect data if the storage is stolen. For the truly sensitive — SSNs, card numbers — add <strong>field-level</strong> encryption so a single leaked field is useless without the key.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div><strong>Hashing is not encryption.</strong> Encryption is reversible with a key; hashing is one-way. Passwords must be <strong>hashed</strong>, never encrypted — with a slow, salted algorithm like <strong>bcrypt</strong> or <strong>argon2</strong> that resists brute force. If your system can decrypt a stored password back to plaintext, that's the bug. You verify a login by hashing the input and comparing, never by decrypting.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. SECRETS ─────────────────────────────────────────────── -->
+    <section class="section" id="secrets">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🗝</div>
+        <h2>Secrets Management</h2>
+        <span class="section-tag">keys, tokens, and where they don't go</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>API keys, database passwords, and signing keys are secrets, and they do not belong in code or committed env files — one leaked repo and they're public forever. Store them in a dedicated <strong>secret store</strong> — Vault, or a cloud KMS — that services fetch from at runtime with tight access control, and <strong>rotate</strong> them periodically so a leaked secret has a short useful life.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>A hardcoded secret is a breach waiting to happen — it lives in git history even after you delete it, and anyone with repo access has it. "Secrets in a vault, rotated, never in code" is a one-line answer that signals you've operated real systems, not just built them.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. THE PERIMETER ───────────────────────────────────────── -->
+    <section class="section" id="perimeter">
+      <div class="section-header">
+        <div class="section-icon icon-red">🧱</div>
+        <h2>The Perimeter</h2>
+        <span class="section-tag">defense in depth</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>No single control is enough — you layer them so one failure doesn't mean a breach. That's <strong>defense in depth</strong>.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Control</th><th>Guards against</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Rate limiting</td><td>Abuse, credential stuffing, scraping (<a href="scaling-patterns.html">Scaling</a>)</td></tr>
+          <tr><td>Input validation at the edge</td><td>Injection, malformed payloads — reject early</td></tr>
+          <tr><td>Least privilege between services</td><td>A compromised service can't reach everything</td></tr>
+          <tr><td>Defense in depth</td><td>One bypassed layer isn't game over</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>Least privilege</strong> is the principle underneath most of this: every service, token, and key gets the minimum access it needs and nothing more. When a component is inevitably compromised, least privilege bounds the blast radius to what that one thing could touch (<a href="resilience-patterns.html">Resilience</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">sessions vs JWT, and the lines to say</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Sessions</th><th>JWT</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>State</td><td>Server-side</td><td>In the token</td></tr>
+          <tr><td>Revocation</td><td>Easy (delete session)</td><td>Hard (short expiry + refresh)</td></tr>
+          <tr><td>Scaling</td><td>Shared session store</td><td>Stateless verify</td></tr>
+          <tr><td>Fits</td><td>Web apps</td><td>APIs, mobile, microservices</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Security lines to say during a design</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>TLS everywhere, mTLS between services in zero-trust</td></tr>
+          <tr><td>Passwords hashed with bcrypt/argon2, never encrypted</td></tr>
+          <tr><td>AuthZ at the gateway (coarse) and service (fine-grained)</td></tr>
+          <tr><td>Secrets in a vault, rotated, never in code</td></tr>
+          <tr><td>Rate limiting + input validation at the edge; least privilege throughout</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> AuthN is who you are, authZ is what you can do — enforce authZ coarse at the gateway and fine at the service. Sessions store state server-side and revoke easily; JWTs are stateless but hard to revoke, so keep them short with refresh tokens. TLS everywhere, hash passwords with bcrypt/argon2, keep secrets in a vault, and layer controls for defense in depth.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

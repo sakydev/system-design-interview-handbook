@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metrics, Logs &amp; Traces | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Metrics, Logs &amp; <span>Traces</span></h1>
+  <p>The three signals of observability, and what each one is actually for. Is something wrong, what exactly happened, and where in the chain.</p>
+  <div class="hero-pills">
+    <span>Metrics</span>
+    <span>Logs</span>
+    <span>Traces</span>
+    <span>Golden signals</span>
+    <span>Percentiles</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. THREE SIGNALS ───────────────────────────────────────── -->
+    <section class="section" id="signals">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📊</div>
+        <h2>Three Signals, Three Questions</h2>
+        <span class="section-tag">each answers a different question</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Observability is three tools, and the mistake is treating them as interchangeable. Each answers one question, and the art is escalating from cheap to expensive: a metric tells you something's wrong, a trace tells you where, and a log tells you exactly what.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  METRICS ─▶ "Is something wrong?"     cheap, aggregated numbers, alertable
+      │                                 (error rate spiked)
+      ▼  something's wrong — where?
+  TRACES  ─▶ "Where in the chain?"     one request across services
+      │                                 (the payment call is timing out)
+      ▼  which call — what happened?
+  LOGS    ─▶ "What exactly happened?"  rich, detailed, expensive, searchable
+                                        (stack trace, the bad input)</pre>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The escalation is the whole point. You can't afford to log everything at metric volume, and you can't alert on individual logs. Metrics catch the problem, traces localize it, logs explain it. Reaching for the right one at the right moment is what separates a fast incident from a three-hour one.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. METRICS ─────────────────────────────────────────────── -->
+    <section class="section" id="metrics">
+      <div class="section-header">
+        <div class="section-icon icon-green">📈</div>
+        <h2>Metrics</h2>
+        <span class="section-tag">the golden signals, and why averages lie</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Metrics are cheap aggregated numbers over time — <strong>counters</strong> (requests served), <strong>gauges</strong> (current connections), <strong>histograms</strong> (latency distribution). The framework to name is the <strong>four golden signals</strong>: latency, traffic, errors, saturation. Instrument those per service and you can see health at a glance.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  WHY PERCENTILES, NOT AVERAGES:
+     1000 requests. 990 at 50ms, 10 at 5000ms.
+        average = 99ms   ← looks fine, hides everything
+        p99     = 5000ms  ← the truth: 1 in 100 users waited 5 seconds
+
+  average smears the outliers away; p99 / p999 expose the tail users feel.</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Two traps. <strong>Averages lie</strong> — always alert and reason on percentiles (p99, p999), because the tail is where real users suffer and the mean hides it. And <strong>cardinality kills metrics systems</strong>: tagging a metric with a high-uniqueness label like user ID explodes the number of series stored and can take the whole metrics pipeline down. Keep labels low-cardinality; user-specific detail belongs in logs, not metric tags.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. LOGS ────────────────────────────────────────────────── -->
+    <section class="section" id="logs">
+      <div class="section-header">
+        <div class="section-icon icon-gold">📜</div>
+        <h2>Logs</h2>
+        <span class="section-tag">rich detail, expensive at volume</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Logs are the detailed record of what actually happened — the stack trace, the offending input, the exact sequence. Rich but expensive, so a few practices keep them useful at scale.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Practice</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Structured logging</td><td>JSON fields, not free text — so you can query and aggregate, not grep</td></tr>
+          <tr><td>Centralized aggregation</td><td>Ship logs off the box to one searchable place; a dead server's logs survive</td></tr>
+          <tr><td>Sampling under volume</td><td>Keep all errors, sample the routine — full logging at scale is unaffordable</td></tr>
+          <tr><td>Correlation IDs</td><td>One ID threaded through a request ties its logs together across services</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The <strong>correlation ID</strong> is the load-bearing detail. Generate one at the edge, pass it through every service and queue, and stamp it on every log line. Now "show me everything that happened to this one failing request" is a single query across the whole system — otherwise you're stitching timestamps by hand.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. TRACES ──────────────────────────────────────────────── -->
+    <section class="section" id="traces">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🧵</div>
+        <h2>Distributed Tracing</h2>
+        <span class="section-tag">where the time went, across services</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>In a microservices system, one user request fans out across many services, and "which one was slow?" isn't answerable from any single service's view. A trace stitches the whole path together: each unit of work is a <strong>span</strong>, spans nest into a tree, and the trace shows where every millisecond went.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  ONE TRACE (one request):
+   gateway  ├────────────────────────────────────────┤  120ms
+   auth       ├───┤                                       8ms
+   orders          ├──────────────────────┤              70ms
+   payment              ├───────────────┤                55ms  ← the culprit
+   db                     ├──┤                            9ms
+
+  each bar is a SPAN; trace context is propagated so spans link into one tree</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The key mechanism is <strong>context propagation</strong>: the trace ID travels with the request across service <em>and queue</em> boundaries, so an async job triggered by a message still links back to the request that caused it. <strong>OpenTelemetry</strong> is the standard for this. Because tracing every request is costly, you <strong>sample</strong> — head-based (decide at the start) or tail-based (decide after, keeping the slow and failed ones, which are the interesting ones).</p>
+      </div>
+    </section>
+
+    <!-- ── 5. IN THE INTERVIEW ────────────────────────────────────── -->
+    <section class="section" id="interview">
+      <div class="section-header">
+        <div class="section-icon icon-red">🎤</div>
+        <h2>In the Interview</h2>
+        <span class="section-tag">cheap points at wrap-up</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Observability is rarely the focus of a design question, which is exactly why one crisp sentence at the end scores easy points few candidates claim. It signals you think about running the system, not just building it.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The wrap-up line: <strong>"I'd instrument the four golden signals per service, alert on the SLO breach not on CPU, and propagate a trace context across the queue boundary so I can follow a request end to end."</strong> Metrics for detection, traces for localization, logs with correlation IDs for the detail. Tie the alert to the user-facing SLO and you've connected this page to the next one (<a href="slo-sla.html">SLI/SLO/SLA</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">the three signals compared</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Metrics</th><th>Logs</th><th>Traces</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Answers</td><td>Is something wrong?</td><td>What exactly happened?</td><td>Where in the chain?</td></tr>
+          <tr><td>Cost</td><td>Cheap</td><td>Expensive at volume</td><td>Moderate, sampled</td></tr>
+          <tr><td>Cardinality</td><td>Must stay low</td><td>High is fine</td><td>Per-request</td></tr>
+          <tr><td>Alertable?</td><td>Yes — the primary signal</td><td>Rarely directly</td><td>No</td></tr>
+          <tr><td>Scope</td><td>Aggregated over time</td><td>One event</td><td>One request, cross-service</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Three signals, three questions: metrics (wrong?), traces (where?), logs (what?). Instrument the four golden signals — latency, traffic, errors, saturation. Alert on percentiles, never averages, and keep metric cardinality low. Thread a correlation ID through logs and a trace context across service and queue boundaries. OpenTelemetry is the standard; sample traces, keeping the slow and failed ones.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

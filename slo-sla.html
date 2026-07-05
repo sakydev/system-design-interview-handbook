@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SLI, SLO &amp; SLA | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>SLI, SLO &amp; <span>SLA</span></h1>
+  <p>Defining "working" with numbers. The three terms, the cost of each nine, and error budgets that turn reliability into arithmetic.</p>
+  <div class="hero-pills">
+    <span>SLI / SLO / SLA</span>
+    <span>The nines</span>
+    <span>Composite availability</span>
+    <span>Error budgets</span>
+    <span>Alerting</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. THREE TERMS ─────────────────────────────────────────── -->
+    <section class="section" id="terms">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🎯</div>
+        <h2>The Three Terms</h2>
+        <span class="section-tag">measurement, target, contract</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Three nested terms, easy to confuse and important to keep straight. An <strong>SLI</strong> is the measurement, an <strong>SLO</strong> is the target you set for it, and an <strong>SLA</strong> is the contract you promise a customer, with penalties if you miss.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  SLI  ── Indicator: the raw measurement
+          "p99 request latency", "fraction of requests that succeed"
+
+  SLO  ── Objective: your internal target for that SLI
+          "99.9% of requests succeed in < 300ms"
+
+  SLA  ── Agreement: the external contract, with money attached
+          "99.5% uptime or you get a refund"
+
+  Rule: SLA is ALWAYS looser than SLO.
+        You promise customers less than you aim for, so an SLO miss
+        is an internal warning — not yet a contract breach.</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The relationship is the exam question. The SLA is deliberately looser than the SLO: you target 99.9% internally but only promise 99.5% externally, so there's a buffer. When you breach the SLO you get an early warning and time to react before you ever breach the SLA and owe a refund. Getting the ordering backwards is the classic mistake.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. CHOOSING SLIs ───────────────────────────────────────── -->
+    <section class="section" id="choosing">
+      <div class="section-header">
+        <div class="section-icon icon-green">🔬</div>
+        <h2>Choosing SLIs</h2>
+        <span class="section-tag">measure what users feel, not what machines do</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The point of an SLI is to capture the user's experience, so measure things users feel: did the request succeed, how long did it take at the edge. Don't measure machine internals like CPU — a server at 90% CPU serving every request in 50ms is fine, and a server at 20% CPU timing out is not.</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Pick few and meaningful over many and noisy. Request success rate and latency at the edge cover most services; a wall of machine metrics buries the signal that a user is actually hurting. CPU and memory are useful for <em>debugging</em> and capacity, but they're causes, not symptoms — they don't belong in an SLI (<a href="metrics-logs-traces.html">Telemetry</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 3. THE NINES ───────────────────────────────────────────── -->
+    <section class="section" id="nines">
+      <div class="section-header">
+        <div class="section-icon icon-gold">9️⃣</div>
+        <h2>The Nines</h2>
+        <span class="section-tag">each one multiplies the cost</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Availability is quoted in nines, and each extra nine shrinks your allowed downtime by 10× — and multiplies the cost to achieve it. Know the rough downtime budgets.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Availability</th><th>Downtime / month</th><th>Downtime / year</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>99% (two nines)</td><td>~7.2 hours</td><td>~3.65 days</td></tr>
+          <tr><td>99.9% (three nines)</td><td>~43 minutes</td><td>~8.8 hours</td></tr>
+          <tr><td>99.99% (four nines)</td><td>~4.3 minutes</td><td>~53 minutes</td></tr>
+          <tr><td>99.999% (five nines)</td><td>~26 seconds</td><td>~5.3 minutes</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div><strong>Composite availability</strong> is the trap: serial dependencies multiply. If a request needs five services each at 99.9%, the end-to-end availability is 0.999⁵ ≈ 99.5% — worse than any single component. Every hard dependency you add drags the whole system's number down. This is a concrete argument for fewer dependencies, graceful degradation, and not chasing more nines than the product needs (<a href="resilience-patterns.html">Resilience</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. ERROR BUDGETS ───────────────────────────────────────── -->
+    <section class="section" id="error-budgets">
+      <div class="section-header">
+        <div class="section-icon icon-purple">💰</div>
+        <h2>Error Budgets</h2>
+        <span class="section-tag">reliability as arithmetic</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The error budget is the clever inversion: <strong>100% minus your SLO is a budget you're allowed to spend</strong>. A 99.9% SLO means 0.1% of requests are permitted to fail — that headroom is currency for shipping features, running experiments, and taking risks.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  SLO 99.9%  ──▶  error budget = 0.1% of requests may fail
+
+     budget remaining ─▶ ship freely, deploy, experiment, take risks
+     budget exhausted ─▶ FREEZE features, stop risky deploys,
+                          spend the sprint on reliability until it recovers
+
+  turns "how much reliability?" from an argument into a number both
+  the SRE and the product team can read off the same dashboard.</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>This dissolves the perennial fight between "ship faster" and "be more reliable." While budget remains, product ships. When it's spent, the team stops feature work and fixes reliability until the budget recovers. Reliability stops being a matter of opinion and becomes arithmetic both sides read off the same number.</p>
+      </div>
+    </section>
+
+    <!-- ── 5. ALERTING ────────────────────────────────────────────── -->
+    <section class="section" id="alerting">
+      <div class="section-header">
+        <div class="section-icon icon-red">🚨</div>
+        <h2>Alerting</h2>
+        <span class="section-tag">symptoms, not causes</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Alert on <strong>symptoms users feel</strong> — the SLI breaching its target — not on causes like high CPU. A CPU alert fires when nothing is wrong and stays silent when something is; an SLI alert fires exactly when users are hurting. <strong>Burn-rate alerts</strong> refine this: page when you're consuming the error budget fast enough to exhaust it soon, so severity scales with how quickly things are degrading.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div><strong>Alert fatigue is a real outage cause.</strong> A team drowning in noisy, non-actionable alerts learns to ignore them, and the one that mattered gets muted with the rest. Every alert should be actionable and tied to user impact. Fewer, symptom-based, budget-aware alerts beat a wall of cause-based ones that cry wolf.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">terms, nines, and budget</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Term</th><th>Is</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>SLI</td><td>The measurement</td><td>p99 latency, success rate</td></tr>
+          <tr><td>SLO</td><td>Internal target</td><td>99.9% &lt; 300ms</td></tr>
+          <tr><td>SLA</td><td>External contract (penalties)</td><td>99.5% or refund — looser than SLO</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Nines</th><th>Downtime / month</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>99%</td><td>~7.2 hours</td></tr>
+          <tr><td>99.9%</td><td>~43 minutes</td></tr>
+          <tr><td>99.99%</td><td>~4.3 minutes</td></tr>
+          <tr><td>99.999%</td><td>~26 seconds</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> SLI measures, SLO targets, SLA promises — and the SLA is always looser than the SLO. Measure what users feel, not CPU. Each nine costs 10× and serial dependencies multiply failure, so don't chase more nines than the product needs. Error budget = 100% − SLO; spend it on velocity, freeze when it's gone. Alert on symptoms and burn rate, and guard against alert fatigue.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>
