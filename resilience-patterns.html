@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resilience Patterns | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Resilience <span>Patterns</span></h1>
+  <p>Keeping one failure from becoming an outage. Timeouts, retries, circuit breakers, bulkheads — and the cascade they exist to stop.</p>
+  <div class="hero-pills">
+    <span>Timeouts</span>
+    <span>Retries + backoff</span>
+    <span>Circuit breaker</span>
+    <span>Bulkheads</span>
+    <span>Load shedding</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. FAILURE IS DEFAULT ──────────────────────────────────── -->
+    <section class="section" id="default">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🛡</div>
+        <h2>Failure Is the Default</h2>
+        <span class="section-tag">at scale, something is always broken</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>With enough machines, disks, and network links, something is failing right now. You cannot design failure out — you design to <strong>contain</strong> it (stop it spreading), <strong>degrade</strong> gracefully (serve less rather than nothing), and <strong>recover</strong> automatically. Every pattern on this page is one of those three verbs.</p>
+        <p>The patterns compose. Timeouts bound how long you wait, retries recover from blips, circuit breakers stop hammering a downed dependency, bulkheads contain the blast radius, and load shedding sheds the least-important work first. Together they break the cascade in the last section.</p>
+      </div>
+    </section>
+
+    <!-- ── 2. TIMEOUTS ────────────────────────────────────────────── -->
+    <section class="section" id="timeouts">
+      <div class="section-header">
+        <div class="section-icon icon-green">⏱</div>
+        <h2>Timeouts</h2>
+        <span class="section-tag">the one every remote call needs</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Every remote call can hang forever, and a caller waiting forever is a caller holding a thread, a connection, and memory forever. A missing timeout is how "slow" becomes "down" — the slow dependency doesn't just fail its own requests, it exhausts the caller's resources and takes the caller down too.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div><strong>Propagate deadlines.</strong> If the top-level request has 3 seconds, a call three levels deep shouldn't get a fresh 3-second budget — it inherits what's left. Pass the deadline down the chain so nobody works on a request the client already gave up on. "Every remote call has a timeout, and I propagate the deadline" is a cheap, senior line.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. RETRIES ─────────────────────────────────────────────── -->
+    <section class="section" id="retries">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🔁</div>
+        <h2>Retries</h2>
+        <span class="section-tag">recover from blips without making a storm</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Retries recover from transient failures — a dropped packet, a momentary blip. Two hard rules: retry only <strong>transient</strong> errors (a 500, a timeout — never a 400), and only <strong>idempotent</strong> operations, or a retry double-charges the customer (<a href="concurrency-control.html">Concurrency Control</a>).</p>
+      </div>
+
+      <div class="diagram">
+<pre>  Naive retry (all clients retry at the same instant):
+     fail ─▶ retry ─▶ retry ─▶ retry     synchronized WAVES hammer the
+      │       │        │        │        recovering service back down
+      └───────┴────────┴────────┘
+
+  Exponential backoff + JITTER:
+     wait 1s ± rand ─▶ wait 2s ± rand ─▶ wait 4s ± rand
+     spacing grows, randomness spreads clients out → no thundering wave</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Retries are dangerous precisely when a service is already struggling — that's when everyone retries at once. <strong>Exponential backoff</strong> spaces attempts out; <strong>jitter</strong> (randomness) desynchronizes clients so they don't retry in lockstep. And beware <strong>retry amplification</strong>: if every layer retries 3×, three stacked layers turn one request into 27 against the bottom service. Use a <strong>retry budget</strong> — cap retries as a fraction of traffic — and retry at one layer, not every layer.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. CIRCUIT BREAKER ─────────────────────────────────────── -->
+    <section class="section" id="circuit-breaker">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🔌</div>
+        <h2>Circuit Breaker</h2>
+        <span class="section-tag">stop hammering a dependency that's down</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>When a dependency is clearly down, retrying is worse than failing fast — you waste your own resources and pile load on something that can't answer. A circuit breaker watches the failure rate and, once it crosses a threshold, <strong>opens</strong>: calls fail immediately without even trying, giving the dependency room to recover.</p>
+      </div>
+
+      <div class="diagram">
+<pre>            failures exceed threshold
+   ┌────────┐ ───────────────────────▶ ┌────────┐
+   │ CLOSED │                           │  OPEN  │  fail fast,
+   │ normal │ ◀─────────────────────    │ no calls│  don't even try
+   └────────┘   probe succeeded         └────┬───┘
+        ▲                                    │ after a cooldown
+        │       ┌───────────┐                │
+        └────── │ HALF-OPEN │ ◀──────────────┘
+       probe    │ let a few  │
+       fails →  │ test calls │  probe passes → close again
+       reopen   │ through    │
+                └───────────┘</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>After a cooldown it goes <strong>half-open</strong>, letting a few probe requests through. If they succeed, it closes and normal traffic resumes; if they fail, it opens again. The breaker protects both sides: the caller stops wasting time on doomed calls, and the struggling callee gets breathing room instead of a stampede.</p>
+      </div>
+    </section>
+
+    <!-- ── 5. BULKHEADS ───────────────────────────────────────────── -->
+    <section class="section" id="bulkheads">
+      <div class="section-header">
+        <div class="section-icon icon-red">🚢</div>
+        <h2>Bulkheads</h2>
+        <span class="section-tag">isolate resources so one leak doesn't sink the ship</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Named after a ship's watertight compartments: a breach floods one, not the whole hull. In software, you give each dependency its own isolated pool of resources — connections, threads, instances — so one slow dependency can only exhaust <em>its</em> pool, not drain every thread in the service.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  WITHOUT bulkheads: one shared thread pool
+     service A slow ─▶ all threads block on A ─▶ calls to healthy B, C also starve
+
+  WITH bulkheads: a pool per dependency
+     ┌── pool A ──┐  A is slow → only pool A fills
+     ┌── pool B ──┐  B still served
+     ┌── pool C ──┐  C still served     the failure is contained to A</pre>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Without isolation, a single slow dependency is enough to hang an entire service — every incoming request eventually blocks on the one slow call and the shared pool drains. Bulkheads cap that damage to the one dependency's share. This is the containment step that stops the cascade below.</div>
+      </div>
+    </section>
+
+    <!-- ── 6. LOAD SHEDDING ───────────────────────────────────────── -->
+    <section class="section" id="shedding">
+      <div class="section-header">
+        <div class="section-icon icon-gold">📉</div>
+        <h2>Load Shedding &amp; Graceful Degradation</h2>
+        <span class="section-tag">serve less rather than fail entirely</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Under overload, the choice is not "serve everyone" — it's "serve some, or serve no one." <strong>Load shedding</strong> drops low-priority work so high-priority work survives: reject non-critical requests, turn off expensive features, return early. <strong>Graceful degradation</strong> serves a worse-but-real answer — stale cache, partial results, a default recommendation — instead of an error.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div><strong>Feature flags as kill switches</strong> make this operational: when the recommendation service is melting, flip a flag to serve a generic list and keep the page loading. The product degrades a little; it doesn't go down. "Under load I'd shed the personalization and serve a cached default rather than fail the whole request" is exactly the degradation instinct interviewers want to hear.</div>
+      </div>
+    </section>
+
+    <!-- ── 7. CASCADE ─────────────────────────────────────────────── -->
+    <section class="section" id="cascade">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🌩</div>
+        <h2>Cascading Failure Anatomy</h2>
+        <span class="section-tag">how one slow DB takes down everything</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Cascading failure is how a small problem becomes a total outage. Walk one chain, then see how each pattern above breaks a link.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  1. DB slows down (a bad query, a lock, a spike)
+        │                                    ← TIMEOUT bounds the wait
+  2. app threads block waiting on the DB
+        │                                    ← BULKHEAD isolates the DB pool
+  3. thread pool exhausts; healthy requests can't get a thread
+        │                                    ← LOAD SHEDDING drops low-priority work
+  4. health checks time out → node marked unhealthy, pulled from the LB
+        │                                    ← shallow health check (Discovery)
+  5. its traffic reshuffles onto the remaining nodes
+        │                                    ← CIRCUIT BREAKER stops the DB pile-on
+  6. now THEY are overloaded → they tip over → total outage
+                                             ← BACKOFF + JITTER prevents retry waves</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The vicious part is step 5: removing an overloaded node moves its load onto the survivors, pushing them over the same edge — the failure accelerates as it spreads. A deep health check makes it worse by taking every node out at once when the shared DB blips (<a href="service-discovery.html">Discovery</a>). The patterns aren't academic; each one severs a specific link in this exact chain.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">patterns on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Pattern</th><th>Protects against</th><th>Key parameter</th><th>Gotcha</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Timeout</td><td>Hung calls exhausting resources</td><td>Deadline (propagated)</td><td>Missing one turns slow into down</td></tr>
+          <tr><td>Retry</td><td>Transient blips</td><td>Backoff, jitter, budget</td><td>Amplifies load if stacked</td></tr>
+          <tr><td>Circuit breaker</td><td>Hammering a downed dependency</td><td>Failure threshold, cooldown</td><td>Tune so it doesn't flap</td></tr>
+          <tr><td>Bulkhead</td><td>One dependency draining all resources</td><td>Pool size per dependency</td><td>Over-partitioning wastes capacity</td></tr>
+          <tr><td>Load shedding</td><td>Overload collapsing everything</td><td>Priority classes</td><td>Must know what's low-priority</td></tr>
+          <tr><td>Graceful degradation</td><td>All-or-nothing failure</td><td>Fallback path</td><td>Fallback must be truly cheap</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Failure is the default; contain, degrade, recover. Every remote call gets a timeout with a propagated deadline. Retry only transient, idempotent calls, with backoff and jitter, at one layer. Circuit breakers fail fast to protect both sides. Bulkheads isolate the blast radius. Shed low-priority load and degrade before you fail. Each pattern cuts a specific link in the cascade chain.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

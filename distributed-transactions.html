@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distributed Transactions | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Distributed <span>Transactions</span></h1>
+  <p>Keeping multiple systems in agreement without a shared transaction. Two-phase commit, sagas, and the outbox that makes events reliable.</p>
+  <div class="hero-pills">
+    <span>2PC</span>
+    <span>Sagas</span>
+    <span>Compensation</span>
+    <span>Outbox</span>
+    <span>CDC</span>
+    <span>Idempotency</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. THE PROBLEM ─────────────────────────────────────────── -->
+    <section class="section" id="problem">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔄</div>
+        <h2>The Problem</h2>
+        <span class="section-tag">one action, several stores, no shared transaction</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Inside one database, a transaction makes several writes all-or-nothing — ACID handles it (<a href="consistency-models.html">Consistency Models</a>). But "place an order" now touches the order service, the payment service, and the inventory service, each with its own database. There is no transaction that spans them. If payment succeeds and inventory fails, you've charged a customer for something you can't ship.</p>
+        <p>You can't stretch local ACID across the network. So you reach for one of a few patterns that trade the clean guarantee for something workable.</p>
+      </div>
+    </section>
+
+    <!-- ── 2. 2PC ─────────────────────────────────────────────────── -->
+    <section class="section" id="2pc">
+      <div class="section-header">
+        <div class="section-icon icon-green">🤝</div>
+        <h2>Two-Phase Commit</h2>
+        <span class="section-tag">atomic across nodes, at a steep price</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>2PC keeps strict atomicity with a coordinator and two phases. <strong>Prepare</strong>: the coordinator asks every participant "can you commit?" and each locks its data and votes yes/no. <strong>Commit</strong>: if all voted yes, the coordinator tells everyone to commit; if any said no, everyone aborts.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  PHASE 1 — prepare               PHASE 2 — commit
+  coordinator ─▶ "prepare?" ─▶    all yes → coordinator ─▶ "commit" ─▶ done
+     ├─ payment:   yes (locks)    any no  → coordinator ─▶ "abort"  ─▶ rollback
+     ├─ inventory: yes (locks)
+     └─ shipping:  yes (locks)    ⚠ participants HOLD LOCKS between phases
+                                    ⚠ coordinator dies after prepare?
+                                      participants block, locked, waiting</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>2PC is rare in practice for three reasons. Participants <strong>hold locks</strong> from prepare until commit, killing throughput. It's a <strong>blocking</strong> protocol: if the coordinator dies after prepare, participants sit locked, unable to decide. And it adds round trips and a single point of failure. It gives real atomicity, but the availability cost is why most systems choose sagas instead.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. SAGAS ───────────────────────────────────────────────── -->
+    <section class="section" id="sagas">
+      <div class="section-header">
+        <div class="section-icon icon-gold">📜</div>
+        <h2>Sagas</h2>
+        <span class="section-tag">local transactions plus compensation</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A saga drops global atomicity and embraces the network. It's a sequence of <strong>local</strong> transactions, each committing in its own service. If a later step fails, you don't roll back — you run <strong>compensating</strong> transactions that semantically undo the earlier steps. No locks held across services, so it stays available.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  Payment saga — forward steps, and the compensation path on failure:
+
+  ▶ create order ──▶ charge card ──▶ reserve stock ──▶ ✗ shipping fails
+                                                          │
+  ◀ cancel order ◀── refund card ◀── release stock ◀──────┘
+     (each compensation is a NEW local transaction, not a rollback)</pre>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Choreography</span>
+            <span class="card-badge badge-green">events, no central brain</span>
+          </div>
+          <div class="card-body">
+            <p>Each service listens for events and emits its own. No coordinator — the flow emerges from who reacts to what. Simple for short sagas; hard to follow and debug as steps multiply, because the logic is scattered.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Orchestration</span>
+            <span class="card-badge badge-gold">a coordinator drives</span>
+          </div>
+          <div class="card-body">
+            <p>A central orchestrator tells each service what to do and when, and triggers compensations on failure. One place holds the flow, easier to reason about and monitor; the orchestrator is one more component to build and run.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Compensation is <strong>semantic undo, not rollback</strong>. You can't un-send an email or un-charge a card — you send a "cancelled" notice or issue a refund. Design each compensating action as a real business operation that reverses the effect, and accept that there's a window where the system is partway done and visibly inconsistent (<a href="consistency-models.html">eventual consistency</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. OUTBOX ──────────────────────────────────────────────── -->
+    <section class="section" id="outbox">
+      <div class="section-header">
+        <div class="section-icon icon-purple">📤</div>
+        <h2>The Outbox Pattern</h2>
+        <span class="section-tag">the default answer to "publish events reliably"</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Sagas and event-driven designs assume you can reliably publish an event when you change data. But "commit to the DB" and "publish to the broker" are two systems — you can't make both atomic. Crash between them and you've either updated the DB with no event, or published an event for a change that rolled back. This is the <strong>dual-write problem</strong>.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  THE TRAP: two writes, no atomicity
+     write DB ✓ ──╳ crash ──  publish event ✗   → event lost forever
+
+  THE OUTBOX: one local transaction
+     ┌─ BEGIN ────────────────────────────┐
+     │  update orders                       │  both commit together,
+     │  insert into OUTBOX (the event row)  │  atomically — same DB
+     └─ COMMIT ────────────────────────────┘
+                    │
+         a relay process reads the outbox table
+                    ▼
+             publishes to the broker, marks the row sent
+             (retries safely — at-least-once)</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The fix: write the event into an <strong>outbox table</strong> in the <em>same</em> local transaction as the data change. Now they commit or fail together. A separate relay polls the outbox and publishes to the broker, marking rows as sent. If the relay crashes mid-publish, it retries — so delivery is at-least-once, and consumers must dedup (<a href="concurrency-control.html">Concurrency Control</a>). This is the standard, reliable way to turn a state change into an event.</p>
+      </div>
+    </section>
+
+    <!-- ── 5. CDC ─────────────────────────────────────────────────── -->
+    <section class="section" id="cdc">
+      <div class="section-header">
+        <div class="section-icon icon-red">🪝</div>
+        <h2>Change Data Capture</h2>
+        <span class="section-tag">the database as an event source</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>CDC tails the database's write-ahead log (Debezium is the common tool) and turns every committed change into an event stream (<a href="replication.html">WAL</a>). Since the log records exactly what committed, downstream consumers — search indexes, caches, analytics — stay in sync with zero application code writing events.</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>Outbox vs raw CDC.</strong> Outbox gives you clean, purpose-shaped domain events ("OrderPlaced") but needs the app to write outbox rows. Raw CDC needs no app changes but emits row-level table diffs that consumers must interpret. Outbox when you want well-defined events; CDC when you want to capture everything with no app involvement. Both rest on the same idea: derive the event stream from something already committed, never from a second write.</div>
+      </div>
+    </section>
+
+    <!-- ── 6. IDEMPOTENCY ─────────────────────────────────────────── -->
+    <section class="section" id="idempotency">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔁</div>
+        <h2>Idempotency Is the Glue</h2>
+        <span class="section-tag">every step must tolerate replay</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Every pattern here delivers at-least-once: the outbox relay retries, saga steps re-fire, CDC replays after a restart. So every step must be safe to run twice. Idempotency isn't an add-on — it's the property that makes the whole approach correct. A retried "charge card" that charges twice turns a resilience feature into a bug.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Tie it together in an interview: "I'll keep the write and the event atomic with an outbox, relay it to the broker, and coordinate the cross-service flow as a saga with compensations. Since delivery is at-least-once, every consumer dedups on an idempotency key." That sentence covers the whole topic — and idempotency is the load-bearing word (<a href="concurrency-control.html">Concurrency Control</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">2PC vs saga vs outbox</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>2PC</th><th>Saga</th><th>Outbox</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Consistency</td><td>Strong, atomic</td><td>Eventual</td><td>Eventual (reliable publish)</td></tr>
+          <tr><td>Latency</td><td>High (locks, round trips)</td><td>Low per step</td><td>Low</td></tr>
+          <tr><td>Failure behavior</td><td>Blocks on coordinator</td><td>Compensate backward</td><td>Retry the relay</td></tr>
+          <tr><td>Complexity</td><td>Coordinator, locks</td><td>Compensations to design</td><td>Outbox table + relay</td></tr>
+          <tr><td>Use when</td><td>Rare — true atomicity required</td><td>Cross-service business flows</td><td>Reliably publishing events</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Local ACID doesn't cross the network. 2PC gives atomicity but blocks on the coordinator and holds locks — rare. Sagas trade atomicity for availability: local steps plus compensating undo. The dual-write problem is real; the outbox pattern solves it by making the event atomic with the data change, relayed to the broker. CDC derives events from the WAL. Everything is at-least-once, so every step is idempotent.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concurrency Control | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Concurrency <span>Control</span></h1>
+  <p>Correctness when the same data is touched twice at once. Idempotency, optimistic vs pessimistic locking, distributed locks, and why clocks lie.</p>
+  <div class="hero-pills">
+    <span>Idempotency</span>
+    <span>Optimistic</span>
+    <span>Pessimistic</span>
+    <span>Distributed locks</span>
+    <span>Logical clocks</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHERE RACES COME FROM ───────────────────────────────── -->
+    <section class="section" id="races">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔐</div>
+        <h2>Where Races Come From</h2>
+        <span class="section-tag">"what if this arrives twice?"</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A race is two operations touching the same data at once, where the result depends on timing. In distributed systems they're everywhere: <strong>retries</strong> resend a request, <strong>concurrent users</strong> edit the same row, <strong>at-least-once delivery</strong> replays messages, <strong>multi-node writes</strong> land in parallel. The interview tell is a single question — "what if this request arrives twice?" — and if you don't have an answer, that's the bug they're hunting.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  Lost update — two reads, two writes, one survives:
+     T1: read balance=100 ──────────── write 100+50 = 150
+     T2:        read balance=100 ── write 100−30 = 70
+                                        ▲ T2 overwrites T1; the +50 vanishes
+     correct answer was 120. The store saw 70.</pre>
+      </div>
+    </section>
+
+    <!-- ── 2. IDEMPOTENCY ─────────────────────────────────────────── -->
+    <section class="section" id="idempotency">
+      <div class="section-header">
+        <div class="section-icon icon-green">🔁</div>
+        <h2>Idempotency</h2>
+        <span class="section-tag">make running twice the same as running once</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>An idempotent operation has the same effect whether applied once or many times. Some are <strong>naturally</strong> idempotent — <code>set status = 'paid'</code>, adding to a set, an upsert. Others aren't — <code>balance = balance + 50</code>, "send email," "create order." For those you add an <strong>idempotency key</strong>.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  Idempotency-key flow:
+     request arrives with key "abc123"
+              │
+              ▼
+     is "abc123" in the dedup store?
+        ├─ yes ─▶ return the SAVED result   (a replay — do nothing new)
+        └─ no  ─▶ process it, store (key → result), then return
+                  dedup store keeps keys with a TTL (hours/days)</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The client generates a unique key per logical operation and sends it with the request. The server records processed keys in a <strong>dedup store</strong>; a repeat key returns the stored result instead of re-executing. Size the store with a TTL long enough to outlast any retry window (<a href="apis.html">idempotency keys</a>). This is how you make a payment endpoint safe to retry.</p>
+      </div>
+    </section>
+
+    <!-- ── 3. DELIVERY SEMANTICS ──────────────────────────────────── -->
+    <section class="section" id="delivery">
+      <div class="section-header">
+        <div class="section-icon icon-gold">📬</div>
+        <h2>Delivery Semantics, From the Consumer's Seat</h2>
+        <span class="section-tag">exactly-once effect, decoded</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The three delivery levels look different from the receiving end. <strong>At-most-once</strong>: you might miss a message. <strong>At-least-once</strong>: you might get it twice. <strong>Exactly-once</strong>: you act on it once. Since networks can't guarantee exactly-once <em>delivery</em>, you build exactly-once <em>effect</em> from the pieces you control.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The equation to memorize: <strong>exactly-once effect = at-least-once delivery + idempotent processing</strong>. The broker resends until acked (at-least-once); your consumer dedups so reprocessing changes nothing (idempotent). Together they behave as if each message landed once. When an interviewer says "exactly-once," this is the answer they want (<a href="messaging.html">Messaging</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. OPTIMISTIC ──────────────────────────────────────────── -->
+    <section class="section" id="optimistic">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🍃</div>
+        <h2>Optimistic Concurrency</h2>
+        <span class="section-tag">assume no conflict, check at write</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Optimistic control bets conflicts are rare. Read the data with its <strong>version</strong>, do your work, then write only if the version hasn't changed — a compare-and-swap. If someone else wrote in between, the version moved, your write is rejected, and you retry. No locks held while you think.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  UPDATE items SET stock = 4, version = 6
+  WHERE id = 42 AND version = 5     ← only succeeds if still version 5
+
+     T1 reads v5 ──── work ──── writes WHERE v5 → OK, now v6
+     T2 reads v5 ──── work ──── writes WHERE v5 → 0 rows changed → RETRY
+                                        (T1 already moved it to v6)</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Wins when conflicts are rare: no lock overhead, high concurrency, and the occasional retry is cheap. It degrades when conflicts are common — everyone keeps colliding and retrying, wasting work. That's the signal to switch to pessimistic locking.</p>
+      </div>
+    </section>
+
+    <!-- ── 5. PESSIMISTIC ─────────────────────────────────────────── -->
+    <section class="section" id="pessimistic">
+      <div class="section-header">
+        <div class="section-icon icon-red">🔒</div>
+        <h2>Pessimistic Locking</h2>
+        <span class="section-tag">assume conflict, lock first</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Pessimistic control assumes conflict and takes a lock before touching the data — <code>SELECT ... FOR UPDATE</code> grabs the row so nobody else can write it until you commit. Others wait. This wins when contention is high: inventory decrements, seat booking, anything where collisions are the norm and a retry storm would be worse than a short wait.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Locks bring <strong>deadlock</strong>: T1 holds A waiting for B, T2 holds B waiting for A, both stuck forever. Databases detect and kill one, but you avoid it by acquiring locks in a consistent order and keeping them short. Held locks also cap throughput — the whole point is serializing access, which is the opposite of concurrency. Use them where correctness demands it, not by default.</div>
+      </div>
+    </section>
+
+    <!-- ── 6. DISTRIBUTED LOCKS ───────────────────────────────────── -->
+    <section class="section" id="distributed-locks">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🌐</div>
+        <h2>Distributed Locks</h2>
+        <span class="section-tag">"just use a Redis lock" needs caveats</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Sometimes the lock must span services, not one database — only one worker should process a job, only one scheduler should fire. A lock service (Redis, ZooKeeper, etcd) grants a lock with a <strong>lease TTL</strong> so a dead holder's lock auto-expires instead of blocking forever. Simple, until the holder isn't actually dead.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  THE EXPIRED-LEASE TRAP:
+     worker A acquires lock (TTL 30s) ─▶ A pauses (GC, slow disk) 35s
+        lease EXPIRES at 30s ─▶ worker B acquires the same lock
+           A wakes up, still thinks it holds the lock ─▶ BOTH act. Corruption.
+
+  FENCING TOKENS — the fix:
+     each grant carries an increasing token:  A gets 33,  B gets 34
+     the protected resource REJECTS any write with a token < the highest seen
+     A's stale write (token 33) is refused; B's (34) wins.</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>"Just use a Redis lock" is incomplete because a lease can expire while the holder is merely paused — a GC pause, a slow syscall — so two workers believe they hold it. A TTL alone can't prevent this. <strong>Fencing tokens</strong> fix it: a monotonically increasing number the downstream resource checks, rejecting any writer with a stale token. If the lock protects something that can be corrupted, you need fencing, not just a TTL.</div>
+      </div>
+    </section>
+
+    <!-- ── 7. LOGICAL CLOCKS ──────────────────────────────────────── -->
+    <section class="section" id="clocks">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🕰</div>
+        <h2>Logical Clocks</h2>
+        <span class="section-tag">wall clocks can't order distributed events</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>You can't order events across machines by timestamp, because clocks drift — two servers' wall clocks disagree by milliseconds, enough that "later" timestamp doesn't mean "happened after." Logical clocks order events by causality instead of time.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Lamport clocks</span>
+            <span class="card-badge badge-gold">ordering</span>
+          </div>
+          <div class="card-body">
+            <p>A counter each node bumps on every event and carries on every message. Gives a consistent total order that respects causality: if A caused B, A's counter is lower. Can't tell whether two events were concurrent or truly ordered — only that the order it gives is legal.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Vector clocks</span>
+            <span class="card-badge badge-purple">detecting concurrency</span>
+          </div>
+          <div class="card-body">
+            <p>A per-node vector of counters. Comparing two vectors tells you if one happened-before the other, or if they're genuinely <strong>concurrent</strong> — which is exactly the conflict detection Dynamo-style stores use to know two writes need resolving (<a href="replication.html">leaderless replication</a>).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Intuition is enough for an interview: wall clocks lie across machines, so causal ordering uses logical clocks. Lamport for a legal total order, vector clocks when you must detect concurrent writes. You won't derive the proofs; you'll name the tool and why timestamps don't cut it.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">techniques on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Technique</th><th>Use when</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Idempotency key</td><td>Retryable non-idempotent writes</td><td>Dedup store + TTL</td></tr>
+          <tr><td>Optimistic (version/CAS)</td><td>Conflicts are rare</td><td>Retries on conflict</td></tr>
+          <tr><td>Pessimistic (row lock)</td><td>Conflicts are common</td><td>Throughput, deadlock risk</td></tr>
+          <tr><td>Distributed lock</td><td>Mutual exclusion across services</td><td>Lease TTL + fencing tokens</td></tr>
+          <tr><td>Lamport clock</td><td>Consistent ordering of events</td><td>Can't detect concurrency</td></tr>
+          <tr><td>Vector clock</td><td>Detecting concurrent writes</td><td>Size grows with node count</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Always answer "what if this arrives twice?" — idempotency keys make non-idempotent writes safe to retry. Exactly-once effect = at-least-once + idempotent processing. Optimistic when conflicts are rare, pessimistic when they're common. Distributed locks need lease TTLs and fencing tokens, not just a Redis SETNX. Wall clocks can't order events across machines — use logical clocks.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

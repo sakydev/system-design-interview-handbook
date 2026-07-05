@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consensus | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Consensus</h1>
+  <p>How machines agree on one value when any of them can fail. Quorums, Raft, and where to put coordination so it never touches the hot path.</p>
+  <div class="hero-pills">
+    <span>Quorums</span>
+    <span>FLP</span>
+    <span>Raft</span>
+    <span>Leader election</span>
+    <span>etcd / ZooKeeper</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHY NEEDED ──────────────────────────────────────────── -->
+    <section class="section" id="why">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🗳</div>
+        <h2>Why Consensus Is Needed</h2>
+        <span class="section-tag">anywhere "exactly one" must be true</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Consensus is getting a set of machines to agree on a single value even when some of them fail. You need it wherever exactly one of something must be true across the cluster: one <strong>leader</strong> (<a href="replication.html">Replication</a>), one holder of a <strong>distributed lock</strong> (<a href="concurrency-control.html">Concurrency Control</a>), one authoritative <strong>cluster membership</strong> list (<a href="service-discovery.html">Discovery</a>), one agreed <strong>config</strong> value. Get disagreement here and you get split brain, double execution, corruption.</p>
+      </div>
+    </section>
+
+    <!-- ── 2. WHY HARD ────────────────────────────────────────────── -->
+    <section class="section" id="hard">
+      <div class="section-header">
+        <div class="section-icon icon-green">🌫</div>
+        <h2>Why It's Hard</h2>
+        <span class="section-tag">you can't tell slow from dead</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>On an asynchronous network, a silent node is indistinguishable from a slow one — no reply could mean crashed, or just lagging. <strong>FLP</strong> (the Fischer-Lynch-Paterson result) makes it formal: in a fully asynchronous network where even one node can fail, no algorithm can guarantee consensus in bounded time. You can't have perfect agreement, guaranteed termination, and fault tolerance all at once.</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Practical systems sidestep FLP with timeouts and randomness: assume a node that's silent past a timeout is dead, and use random delays to break ties. That trades FLP's theoretical impossibility for "works with overwhelming probability," which is enough. Quorums are the other half of the answer.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. QUORUMS ─────────────────────────────────────────────── -->
+    <section class="section" id="quorums">
+      <div class="section-header">
+        <div class="section-icon icon-gold">➗</div>
+        <h2>Quorums</h2>
+        <span class="section-tag">majority overlap is the whole trick</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The core mechanism is a <strong>majority</strong>. Require more than half the nodes to agree on anything, and a beautiful property falls out: any two majorities must share at least one node. That shared node can't vote for two conflicting decisions, so two leaders can never both win, two conflicting values can never both commit.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  5 nodes. A majority is 3.
+     any set of 3 ─┐
+     any other 3 ─┘  MUST overlap in ≥1 node (3+3 > 5)
+                     that node refuses to back both → no split decision
+
+  This is why clusters are ODD: 3, 5, 7.
+     3 nodes tolerate 1 failure   (majority of 3 = 2)
+     5 nodes tolerate 2 failures  (majority of 5 = 3)
+     an even count adds a node without adding fault tolerance (4 also tolerates 1)</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Odd sizes are the norm because they maximize fault tolerance per node: 5 nodes survive 2 failures, and a 6th node doesn't buy a third. The cluster keeps working as long as a majority is alive; lose the majority and it stops accepting writes rather than risk a split decision — the CP choice (<a href="consistency-models.html">CAP</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 4. RAFT ────────────────────────────────────────────────── -->
+    <section class="section" id="raft">
+      <div class="section-header">
+        <div class="section-icon icon-purple">📋</div>
+        <h2>Raft: The One to Know</h2>
+        <span class="section-tag">designed to be teachable</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Raft splits consensus into two understandable pieces: elect a leader, then replicate a log through it. Time is divided into <strong>terms</strong>, each with at most one leader.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  LEADER ELECTION
+     followers wait for the leader's heartbeat.
+     heartbeat missing past a RANDOM timeout ─▶ become candidate,
+        bump term, request votes from all
+     get a majority ─▶ become leader, start heartbeating
+     random timeouts make simultaneous candidates (split votes) rare;
+        a split vote just retries next term
+
+  LOG REPLICATION
+     client write ─▶ leader appends to its log ─▶ sends to followers
+        followers ack ─▶ once a MAJORITY has it, leader COMMITS
+        ─▶ applies to state machine, tells followers to commit, replies to client</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>An entry is committed only once a majority has stored it, so a committed write survives any minority failure. On a <strong>leader crash</strong>, a follower times out and starts an election. On a <strong>partition</strong>, only the side with a majority can elect a leader and make progress — the minority side stalls, which is what prevents split brain. On a <strong>split vote</strong>, nobody gets a majority and the randomized timeouts resolve it next term.</p>
+      </div>
+    </section>
+
+    <!-- ── 5. PAXOS ───────────────────────────────────────────────── -->
+    <section class="section" id="paxos">
+      <div class="section-header">
+        <div class="section-icon icon-red">🏛</div>
+        <h2>Paxos</h2>
+        <span class="section-tag">older, equivalent, notoriously hard</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Paxos came first and solves the same problem with the same power, but it's famously hard to understand and to implement correctly — Raft was explicitly designed as a teachable replacement. In practice you'll see <strong>Multi-Paxos</strong> (Paxos optimized for a stream of decisions) inside older systems. Name it, note that Raft superseded it for most new designs, and move on.</p>
+      </div>
+    </section>
+
+    <!-- ── 6. IN THE WILD ─────────────────────────────────────────── -->
+    <section class="section" id="wild">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🌍</div>
+        <h2>Consensus in the Wild</h2>
+        <span class="section-tag">small cluster, big fleet</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>You rarely implement consensus — you use a system that already did. <strong>ZooKeeper, etcd, and Consul</strong> are consensus-as-a-service: hand them your leader election, locks, and config, and they run Raft (or Zab) underneath. Many databases embed it directly — CockroachDB, etcd, and Kafka's KRaft mode use Raft internally for their own coordination.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  THE PATTERN: keep the consensus cluster SMALL, the data fleet BIG
+
+  ┌──────────────────────────┐        ┌─────────────────────────────────┐
+  │  consensus cluster (3–5)  │  ◀───  │  large stateless / data fleet    │
+  │  etcd / ZooKeeper         │  reads │  hundreds of nodes               │
+  │  leader, locks, config,   │  coord │  serve the actual traffic        │
+  │  membership               │        │  no consensus on the hot path    │
+  └──────────────────────────┘        └─────────────────────────────────┘</pre>
+      </div>
+    </section>
+
+    <!-- ── 7. WHAT IT COSTS ───────────────────────────────────────── -->
+    <section class="section" id="cost">
+      <div class="section-header">
+        <div class="section-icon icon-gold">💰</div>
+        <h2>What Consensus Costs</h2>
+        <span class="section-tag">never on the hot path</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Every consensus decision needs a round trip to a majority and a durable write on each — so throughput is low and latency includes that quorum wait. That's fine for the handful of coordination decisions a system makes; it's fatal for high-volume data.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Never route high-volume data through consensus. Put coordination — who's leader, who holds the lock, what's the config — in the small consensus cluster, and keep the actual read/write traffic on the big fleet using replication for the data plane (<a href="replication.html">Replication</a>). "Coordination through etcd, data through replicated shards" is the shape. Pushing every write through Raft is a classic way to build something that can't scale.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">coordination need → tool</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Coordination need</th><th>Reach for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Leader election</td><td>etcd / ZooKeeper / Consul (Raft)</td></tr>
+          <tr><td>Distributed lock</td><td>Same, with lease + fencing token</td></tr>
+          <tr><td>Cluster membership</td><td>Consensus store</td></tr>
+          <tr><td>Config that must be consistent</td><td>etcd / Consul KV</td></tr>
+          <tr><td>High-volume data</td><td>NOT consensus — replication + sharding</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Raft state</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Follower</td><td>Default; applies the leader's log, resets election timer on heartbeat</td></tr>
+          <tr><td>Candidate</td><td>Timed out; requesting votes for a new term</td></tr>
+          <tr><td>Leader</td><td>Won a majority; handles writes and heartbeats</td></tr>
+          <tr><td>Term</td><td>Logical clock; each has ≤1 leader, bumped on every election</td></tr>
+          <tr><td>Commit</td><td>Entry stored on a majority — now durable and applied</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Consensus makes "exactly one" true across machines. It's hard because you can't tell slow from dead (FLP); quorums answer it — any two majorities overlap, so no split decision, which is why clusters are odd-sized. Raft is the one to know: terms, elected leader, majority-committed log. Use etcd/ZooKeeper rather than building it, keep the consensus cluster small, and never put high-volume data through it.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>
