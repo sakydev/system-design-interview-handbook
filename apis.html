@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APIs &amp; Protocols | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>APIs &amp; <span>Protocols</span></h1>
+  <p>The contract between clients and services: how they talk, what shape the messages take, and where each style earns its keep.</p>
+  <div class="hero-pills">
+    <span>REST</span>
+    <span>gRPC</span>
+    <span>GraphQL</span>
+    <span>Sync vs async</span>
+    <span>Pagination</span>
+    <span>Idempotency</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. REST ────────────────────────────────────────────────── -->
+    <section class="section" id="rest">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔗</div>
+        <h2>REST: The Default</h2>
+        <span class="section-tag">resources, verbs, and statelessness</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>REST models everything as <strong>resources</strong> addressed by URL and manipulated with HTTP verbs. <code>GET /users/42</code> reads, <code>POST /users</code> creates, <code>PUT/PATCH</code> updates, <code>DELETE</code> removes. Status codes carry the outcome: 2xx success, 4xx the client's fault, 5xx the server's.</p>
+        <p>It's the default for a reason. It rides plain HTTP, so every browser, proxy, and CDN understands it; <code>GET</code>s are cacheable for free; and it's <strong>stateless</strong> — each request carries everything it needs, so any server can handle any request and you scale by adding boxes (<a href="scaling-patterns.html">Scaling Patterns</a>).</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Code</th><th>Means</th><th>Typical use</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>200 / 201</td><td>OK / Created</td><td>Read succeeded / resource created</td></tr>
+          <tr><td>400</td><td>Bad request</td><td>Malformed input, failed validation</td></tr>
+          <tr><td>401 / 403</td><td>Unauthenticated / forbidden</td><td>No valid identity / not allowed</td></tr>
+          <tr><td>404</td><td>Not found</td><td>Resource doesn't exist</td></tr>
+          <tr><td>409</td><td>Conflict</td><td>Version clash, duplicate create</td></tr>
+          <tr><td>429</td><td>Too many requests</td><td>Rate limited (<a href="rate-limiter.html">Rate Limiter</a>)</td></tr>
+          <tr><td>5xx</td><td>Server error</td><td>Retryable if the operation is idempotent</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>REST creaks when the resource shape doesn't match what the client needs. Mobile screens that need data from five resources make five round trips (chatty), or a fat endpoint returns fields nobody reads (over-fetching). Those two pains are exactly what GraphQL and gRPC-streaming set out to fix.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. gRPC ────────────────────────────────────────────────── -->
+    <section class="section" id="grpc">
+      <div class="section-header">
+        <div class="section-icon icon-green">⚡</div>
+        <h2>gRPC: Fast, Typed, Internal</h2>
+        <span class="section-tag">the service-to-service workhorse</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>gRPC defines the contract in a <strong>Protobuf</strong> schema, generates client and server stubs in every language, and sends compact binary frames over HTTP/2. Smaller payloads than JSON, a real typed contract checked at compile time, and multiplexed connections. It also supports <strong>streaming</strong> — client, server, or bidirectional — which REST can't do cleanly.</p>
+        <p>That combination wins <em>inside</em> a system: high-volume, low-latency calls between services that you control on both ends (<a href="microservices.html">Microservices</a>).</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Where it shines</span>
+            <span class="card-badge badge-green">east-west traffic</span>
+          </div>
+          <div class="card-body">
+            <p>Internal service mesh, tight latency budgets, strict contracts across many languages, and streaming RPCs. The binary encoding and HTTP/2 multiplexing pay off most where call volume is highest.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Where it doesn't</span>
+            <span class="card-badge badge-red">the browser wall</span>
+          </div>
+          <div class="card-body">
+            <p>Browsers can't speak raw gRPC — you need a gRPC-Web proxy. Payloads aren't human-readable, so debugging needs tooling, and plain HTTP caches can't see inside. For public, browser-facing APIs, REST is still the safer default.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. GraphQL ─────────────────────────────────────────────── -->
+    <section class="section" id="graphql">
+      <div class="section-header">
+        <div class="section-icon icon-purple">◈</div>
+        <h2>GraphQL: Client-Shaped Queries</h2>
+        <span class="section-tag">one endpoint, you ask for exactly what you need</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>GraphQL exposes a single endpoint and a typed schema. The client sends a query describing precisely the fields it wants, across whatever entities, and gets back that exact shape in one round trip. No over-fetching, no under-fetching, no five calls to stitch a screen together.</p>
+        <p>The cost lands on the server and the edges. Caching is hard — every query is a unique POST body, so HTTP caching by URL no longer works. And the flexible query surface makes the <strong>N+1 problem</strong> easy to trigger: one query for a list, then one more per item, unless you batch with a loader.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  REST                              GraphQL
+  GET /users/42        ─┐           POST /graphql
+  GET /users/42/posts  ─┼─ 3 trips  { user(id:42) {          ─┐
+  GET /users/42/photos ─┘             name                   │  1 trip,
+                                      posts { title }         │  exact shape
+   over/under-fetch,                  photos { url } } }     ─┘
+   fixed shapes                     server resolves each field</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>GraphQL earns its complexity when you have many client types pulling different shapes from the same data — a web app, an iOS app, and partners all hitting one graph — or as an aggregation layer over several backend services. For a single client with stable needs, it's usually more machinery than the problem deserves (<a href="tradeoffs.html">Tradeoffs</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. SYNC VS ASYNC ───────────────────────────────────────── -->
+    <section class="section" id="sync-async">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🔀</div>
+        <h2>Request-Response vs Event-Driven</h2>
+        <span class="section-tag">coupling now, or decoupling later</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>All three styles above are <strong>synchronous</strong>: the caller sends a request and blocks for the answer. Simple, immediate, and the right default — but it couples caller to callee. If the callee is slow or down, the caller waits or fails with it.</p>
+        <p>The alternative is <strong>event-driven</strong>: the producer emits an event and moves on; consumers react whenever they can. That decouples failure domains and absorbs spikes, at the price of eventual consistency and harder debugging — you trade a clear call stack for a chain of messages (<a href="messaging.html">Messaging</a>).</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Request-response</th><th>Event-driven</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Coupling</td><td>Caller waits on callee</td><td>Producer and consumer independent</td></tr>
+          <tr><td>Result</td><td>Immediate, in-band</td><td>Later, out-of-band</td></tr>
+          <tr><td>Failure</td><td>Propagates to caller</td><td>Contained; retried from the queue</td></tr>
+          <tr><td>Spikes</td><td>Hit the callee directly</td><td>Absorbed by the queue</td></tr>
+          <tr><td>Best for</td><td>Reads, anything needing an answer now</td><td>Fire-and-forget work, fan-out, decoupling</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The common pattern is both: respond synchronously with an acknowledgment, then do the heavy work asynchronously. "Upload accepted" returns in 50ms; transcoding runs off a queue. The user isn't blocked on work they don't need to wait for (<a href="video-streaming.html">Video Streaming</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 5. DESIGN DETAILS ──────────────────────────────────────── -->
+    <section class="section" id="details">
+      <div class="section-header">
+        <div class="section-icon icon-red">🧷</div>
+        <h2>Details That Come Up</h2>
+        <span class="section-tag">pagination, versioning, idempotency</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A handful of API details show up in almost every design round. Knowing the right answer to each is cheap credibility.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Pagination: cursor beats offset</span>
+            <span class="card-badge badge-blue">at scale</span>
+          </div>
+          <div class="card-body">
+            <p><strong>Offset</strong> (<code>LIMIT 20 OFFSET 10000</code>) is easy but the DB scans and discards every skipped row, so deep pages get slow, and inserts shift the window and cause skips or dupes.</p>
+            <p><strong>Cursor</strong> passes an opaque pointer to the last item seen (<code>WHERE id &gt; last</code>). Constant-time regardless of depth and stable under inserts. The default for feeds and large lists.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Idempotency keys</span>
+            <span class="card-badge badge-gold">safe retries on writes</span>
+          </div>
+          <div class="card-body">
+            <p>A retried <code>POST /payments</code> must not charge twice. The client sends a unique <code>Idempotency-Key</code>; the server records it on first use and, on a replay, returns the stored result instead of re-executing.</p>
+            <p>This is what makes mutations safe to retry over a flaky network (<a href="concurrency-control.html">Concurrency Control</a>).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <span class="card-title">Versioning and rate-limit headers</span>
+          <span class="card-badge badge-purple">the rest of the contract</span>
+        </div>
+        <div class="card-body">
+          <p><strong>Versioning</strong> keeps you from breaking existing clients when the shape changes: a URL prefix (<code>/v2/</code>) is the blunt, visible option; a header or media-type version is cleaner but easier to miss. Whichever you pick, additive changes shouldn't need a new version — only breaking ones.</p>
+          <p><strong>Rate-limit headers</strong> (<code>X-RateLimit-Remaining</code>, <code>Retry-After</code>) tell a well-behaved client how much budget is left and when to come back, turning a 429 into a signal instead of a surprise (<a href="rate-limiter.html">Rate Limiter</a>).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">the three styles on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>REST</th><th>gRPC</th><th>GraphQL</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Transport</td><td>HTTP/1.1+</td><td>HTTP/2</td><td>HTTP (usually POST)</td></tr>
+          <tr><td>Payload</td><td>JSON (text)</td><td>Protobuf (binary)</td><td>JSON, client-shaped</td></tr>
+          <tr><td>Contract</td><td>Convention / OpenAPI</td><td>Strict, generated stubs</td><td>Typed schema</td></tr>
+          <tr><td>Streaming</td><td>No (awkward)</td><td>Yes, bidirectional</td><td>Via subscriptions</td></tr>
+          <tr><td>HTTP caching</td><td>Free on GET</td><td>No</td><td>Hard</td></tr>
+          <tr><td>Browser</td><td>Native</td><td>Needs proxy</td><td>Native</td></tr>
+          <tr><td>Best fit</td><td>Public, browser-facing APIs</td><td>Internal service-to-service</td><td>Many clients, aggregation layer</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Pagination</th><th>How</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Offset</td><td><code>LIMIT/OFFSET</code></td><td>Slow deep pages, drifts on insert</td></tr>
+          <tr><td>Cursor</td><td>Pointer to last item seen</td><td>Constant-time, stable — use at scale</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> REST for public and browser-facing; gRPC for internal high-volume; GraphQL when many clients pull different shapes. Sync for answers you need now, async to decouple and absorb spikes. Cursor pagination at scale, idempotency keys on retryable writes, and a versioning story before you ship v1.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

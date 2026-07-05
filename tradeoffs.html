@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tradeoffs | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Tradeoffs</h1>
+  <p>Every decision costs something. The grade is not the choice you make — it's whether you can name what it buys and what it takes.</p>
+  <div class="hero-pills">
+    <span>The core axes</span>
+    <span>Read vs write</span>
+    <span>Latency vs consistency</span>
+    <span>Build vs buy</span>
+    <span>Complexity budget</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. THE RUBRIC ──────────────────────────────────────────── -->
+    <section class="section" id="rubric">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🎓</div>
+        <h2>Tradeoffs Are the Grading Rubric</h2>
+        <span class="section-tag">the sentence they're listening for</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Junior candidates argue about which option is <em>correct</em>. Senior candidates know there is rarely a correct option — there's a fit for the constraints in front of them. The interviewer is not checking whether you picked Redis or Memcached. They're checking whether you know what the pick costs.</p>
+        <p>So the unit of a good answer is not the decision. It's this sentence:</p>
+      </div>
+
+      <div class="diagram">
+<pre>   "I'd choose  ┌─────────┐  because it gives us  ┌─────────┐
+                │    X    │                       │    Z    │
+                └─────────┘                       └─────────┘
+    and I'm accepting  ┌─────────┐  which is fine here because ┌──────────────┐
+                       │    Y    │                             │  requirement │
+                       └─────────┘                             └──────────────┘
+
+        X = the choice     Y = what it costs     Z = what it buys</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Say all three parts. "I'll denormalize the feed" is half an answer. "I'll denormalize the feed so reads are a single lookup, paying with write amplification and the risk of stale data, which is acceptable because this is a read-heavy timeline where a few seconds of staleness is invisible" is the whole answer. Same decision. One of them passes.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>When you're stuck between two options, don't stall trying to find the "right" one. Say both out loud with their costs, state which constraint tips it, and move. The reasoning is worth more than the verdict (<a href="design-process.html">Design Process</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 2. THE CORE AXES ───────────────────────────────────────── -->
+    <section class="section" id="axes">
+      <div class="section-header">
+        <div class="section-icon icon-green">🎛</div>
+        <h2>The Core Axes</h2>
+        <span class="section-tag">the handful you'll trade on all day</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Almost every decision in a design lands on one of a few axes. Learn these and you'll recognize the tradeoff before you've finished hearing the question.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Latency vs Consistency</span>
+            <span class="card-badge badge-blue">the everyday one</span>
+          </div>
+          <div class="card-body">
+            <p>Wait for replicas to agree before answering (consistent, slower) or answer from the nearest copy (fast, maybe stale). You pay this on every replicated write, not just during failures.</p>
+            <p><strong>Example:</strong> read from the primary for correctness, or from a replica to cut latency and offload the leader (<a href="consistency-models.html">Consistency Models</a>).</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Throughput vs Latency</span>
+            <span class="card-badge badge-green">batching's bargain</span>
+          </div>
+          <div class="card-body">
+            <p>Batch work together and you push more total volume, but each item waits for the batch to fill. Process items one at a time and each is fast, but the system does less overall.</p>
+            <p><strong>Example:</strong> group writes into one commit, or buffer log lines before flushing — more throughput, higher tail latency.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Availability vs Consistency</span>
+            <span class="card-badge badge-red">CAP, during a partition</span>
+          </div>
+          <div class="card-body">
+            <p>When nodes can't talk, either refuse the request (consistent, unavailable) or serve what you have (available, possibly wrong). There is no third door once the network splits.</p>
+            <p><strong>Example:</strong> a balance check should refuse; a like counter should serve stale (<a href="consistency-models.html">CAP</a>).</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Cost vs Durability</span>
+            <span class="card-badge badge-gold">how many copies</span>
+          </div>
+          <div class="card-body">
+            <p>More replicas, more regions, more backups mean fewer ways to lose data — and a bigger bill. The right number of nines is the one the data is worth, not the most you can buy.</p>
+            <p><strong>Example:</strong> three-way replication for the system of record, single-copy cache that you can rebuild.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Simplicity vs Flexibility</span>
+            <span class="card-badge badge-purple">the abstraction tax</span>
+          </div>
+          <div class="card-body">
+            <p>A rigid design is easy to reason about and hard to extend. A flexible one absorbs future needs and hides more moving parts. Generality you don't need yet is complexity you pay for now.</p>
+            <p><strong>Example:</strong> a fixed schema vs a generic key-value blob; a direct call vs a plugin system.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Build vs Buy</span>
+            <span class="card-badge badge-blue">whose problem is it</span>
+          </div>
+          <div class="card-body">
+            <p>Build it and you get exactly what you want plus the burden of running it forever. Buy or adopt and you get it now, bounded by someone else's roadmap and priced by their vendor.</p>
+            <p><strong>Example:</strong> a managed queue vs your own, hosted search vs a self-run Elasticsearch cluster.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>These axes are not independent. Pushing consistency up usually pushes latency up and availability down at once. Part of the skill is seeing that moving one slider drags the others, and saying so.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. READ VS WRITE ───────────────────────────────────────── -->
+    <section class="section" id="read-write">
+      <div class="section-header">
+        <div class="section-icon icon-gold">↔️</div>
+        <h2>Read vs Write Optimization</h2>
+        <span class="section-tag">the canonical tradeoff, worked through</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The most reused tradeoff in system design: you can make reads cheap or writes cheap, rarely both. Every technique here moves work from one side to the other. Which side you optimize follows from the read/write ratio, and you should have that ratio from your estimation (<a href="estimation.html">Estimation</a>).</p>
+        <p>Denormalization, materialized views, and precomputed indexes all say the same thing — do the work once at write time so every read is a lookup. The clearest instance is feed fan-out.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  FAN-OUT ON WRITE                        FAN-OUT ON READ
+  (precompute — cheap reads)              (compute on demand — cheap writes)
+
+  Alice posts ──▶ copy into the feed      Alice posts ──▶ append to Alice's
+                  of every follower                        own list. Done.
+                  (1 write → N writes)
+                                          Bob opens feed ──▶ gather posts from
+  Bob opens feed ──▶ read his list.                          everyone Bob follows,
+                     One lookup.                             merge, sort.
+                                                             (1 read → N reads)
+
+  Great when: reads ≫ writes,             Great when: writes ≫ reads, or the
+  followers bounded.                      author has millions of followers.
+  Dies on: celebrities (one post          Dies on: users following thousands
+  fans out to millions).                  (every open is a huge scatter-gather).</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Neither wins outright, which is why real feeds go hybrid: fan-out on write for normal accounts, fan-out on read for celebrities, stitched together at read time. That hybrid is itself a tradeoff — more moving parts in exchange for handling both ends of the follower distribution (<a href="news-feed.html">News Feed</a>).</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Moving work from read to write</span>
+          <span class="card-badge badge-gold">and back</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Technique</th><th>Pays for</th><th>Costs you</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Denormalization</td><td>Reads with no joins</td><td>Duplicated data, update fan-out, drift risk</td></tr>
+            <tr><td>Materialized view</td><td>Precomputed query results</td><td>Refresh lag, storage, staleness</td></tr>
+            <tr><td>Secondary index</td><td>Fast lookups on non-key fields</td><td>Slower writes, more space (<a href="indexing.html">Indexing</a>)</td></tr>
+            <tr><td>Caching</td><td>Repeated reads served from memory</td><td>Invalidation, staleness, a cold-start cliff (<a href="caching.html">Caching</a>)</td></tr>
+            <tr><td>Fan-out on write</td><td>Feed reads as one lookup</td><td>Write amplification, celebrity blowup</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Every read optimization on this list creates a second copy of the truth. Two copies can disagree. The hidden cost is never just storage or write latency — it's the consistency problem you now own and have to close with invalidation or a refresh path.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. COMPLEXITY BUDGET ───────────────────────────────────── -->
+    <section class="section" id="complexity">
+      <div class="section-header">
+        <div class="section-icon icon-red">🧮</div>
+        <h2>The Complexity Budget</h2>
+        <span class="section-tag">every box has to earn its place</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Each component you add is not free even if it's fast. It's another thing to deploy, monitor, secure, keep consistent, and page someone about at 3am. Treat complexity as a budget you spend, and make every box justify itself against a requirement you actually have.</p>
+        <p>The failure mode in interviews is the opposite: reaching for Kafka, a cache tier, and five microservices before anyone has established there's a problem that needs them. That reads as pattern-matching, not engineering.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  For each component, ask:
+
+    Requirement it serves? ──no──▶ delete it. It's decoration.
+            │ yes
+            ▼
+    Does the simple version fail? ──no──▶ keep the simple version.
+            │ yes                          (single DB, sync call, no cache)
+            ▼
+    Fails on which number? ──▶ name it: QPS, data size, latency target,
+            │                  blast radius. That number is your justification.
+            ▼
+    Add the component. Now you can defend it.</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The discipline is to start simple and let a specific number force each addition. One database until the read QPS exceeds what it serves — then a cache. One region until latency to distant users hurts — then a second (<a href="scaling-patterns.html">Scaling Patterns</a>). Adding the machinery before the number arrives is spending budget you didn't need to.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>A strong line: "The simplest thing that works here is a single Postgres instance. It handles the write load from our estimate. I'll add a read replica the moment read QPS crosses X, and shard only if a single node's storage can't hold a year of data." You've shown you know the fancy version <em>and</em> that you won't reach for it early.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">you choose / you pay with</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>You choose</th><th>You gain</th><th>You pay with</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Strong consistency</td><td>Correct reads, single-copy illusion</td><td>Latency, availability under partition</td></tr>
+          <tr><td>Eventual consistency</td><td>Low latency, stays up in a partition</td><td>Stale reads, reconciliation logic</td></tr>
+          <tr><td>Denormalization</td><td>Read with no joins</td><td>Duplicated data, update fan-out</td></tr>
+          <tr><td>Normalization</td><td>One source of truth, clean writes</td><td>Joins on the read path</td></tr>
+          <tr><td>Caching</td><td>Fast repeated reads</td><td>Invalidation, staleness, cold starts</td></tr>
+          <tr><td>Fan-out on write</td><td>Cheap feed reads</td><td>Write amplification, celebrity blowup</td></tr>
+          <tr><td>Fan-out on read</td><td>Cheap writes</td><td>Expensive scatter-gather reads</td></tr>
+          <tr><td>Batching</td><td>Throughput</td><td>Higher tail latency</td></tr>
+          <tr><td>Synchronous call</td><td>Simple, immediate result</td><td>Tight coupling, blocking on failure</td></tr>
+          <tr><td>Async / queue</td><td>Decoupling, spike absorption</td><td>Eventual consistency, harder debugging</td></tr>
+          <tr><td>More replicas / regions</td><td>Durability, locality, failover</td><td>Cost, cross-region latency, conflicts</td></tr>
+          <tr><td>Sharding</td><td>Horizontal scale past one node</td><td>Cross-shard queries, rebalancing, hot keys</td></tr>
+          <tr><td>SQL</td><td>Transactions, joins, flexible queries</td><td>Harder horizontal scaling</td></tr>
+          <tr><td>NoSQL</td><td>Scale, schema flexibility</td><td>Query-first modeling, weaker transactions</td></tr>
+          <tr><td>Microservices</td><td>Independent deploy and scale</td><td>Network calls, distributed failure, ops load</td></tr>
+          <tr><td>Monolith</td><td>Simple deploy, local calls, real transactions</td><td>Scales as one unit, coupled teams</td></tr>
+          <tr><td>Build</td><td>Exactly what you need</td><td>You run it forever</td></tr>
+          <tr><td>Buy / managed</td><td>It works now</td><td>Vendor limits, cost, less control</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liner to keep ready.</strong> There are no free wins in a distributed system — only trades. Name the choice, name what it buys, name what it costs, and tie the cost back to a requirement that makes it acceptable. Do that out loud on every major decision and you're answering at the level they're grading.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Networking Basics | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Networking <span>Basics</span></h1>
+  <p>Everything between the browser and your load balancer: how a request is resolved, connected, secured, and delivered — and where the milliseconds go.</p>
+  <div class="hero-pills">
+    <span>DNS</span>
+    <span>TCP / UDP</span>
+    <span>TLS</span>
+    <span>HTTP/1.1 → 3</span>
+    <span>CDN</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. ANATOMY OF A REQUEST ────────────────────────────────── -->
+    <section class="section" id="anatomy">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🔬</div>
+        <h2>Anatomy of a Request</h2>
+        <span class="section-tag">what happens before your code runs</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Before a single line of your handler executes, four things had to happen: the name resolved to an address, a TCP connection opened, a TLS session negotiated, and the HTTP request crossed the wire. Each is a round trip or more. On a fresh connection to a distant server, you can spend 300ms on setup before the server even sees the request.</p>
+        <p>Knowing where that time goes is the point. Most front-end latency wins come from cutting round trips out of this path, not from faster application code.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  Browser                                                        Server
+    │                                                              │
+    │  1. DNS lookup   example.com ──▶ 93.184.x.x                  │   ~20–120ms
+    │     (may be cached; skip if warm)                            │   (first time)
+    │                                                              │
+    │  2. TCP handshake   SYN ─▶ ◀─ SYN-ACK   ACK ─▶               │   1 round trip
+    │                                                              │
+    │  3. TLS handshake   ClientHello ─▶ ◀─ ... ─▶                 │   1 RT (TLS 1.3)
+    │                                                              │   2 RT (TLS 1.2)
+    │  4. HTTP request    GET / ────────────────────────▶          │
+    │                     ◀──────────────────────── 200 OK         │   TTFB
+    │                                                              │
+    ▼  first byte arrives                                          ▼
+
+  TTFB = time to first byte = setup + one request/response round trip.</pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The reason keep-alive, connection pooling, and CDNs matter is all visible here: they let you skip steps 1–3. A warm connection to a nearby edge turns a 300ms cold start into a single short round trip. "Reuse the connection" is one of the cheapest latency wins you can name in an interview.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. DNS ─────────────────────────────────────────────────── -->
+    <section class="section" id="dns">
+      <div class="section-header">
+        <div class="section-icon icon-green">🧭</div>
+        <h2>DNS: Names to Addresses</h2>
+        <span class="section-tag">the internet's phone book, and its routing lever</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>DNS turns <code>example.com</code> into an IP. A <strong>recursive resolver</strong> (usually your ISP's or something like 8.8.8.8) does the legwork, walking from the root to the <strong>authoritative</strong> nameserver that actually owns the record, then caching the answer for its <strong>TTL</strong>. Most lookups never leave the resolver's cache.</p>
+        <p>DNS is also a load-balancing and routing tool. Return multiple A records and clients spread across them. Return different answers based on the resolver's location — <strong>GeoDNS</strong> — and you send each user to their nearest region.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">What TTL buys and costs</span>
+            <span class="card-badge badge-green">the staleness knob</span>
+          </div>
+          <div class="card-body">
+            <p>A long TTL means fewer lookups and faster page loads, but slow propagation: change a record and old answers linger until caches expire. A short TTL flips it — quick failover, more lookup traffic.</p>
+            <p>This is why DNS is a weak failover mechanism. You can't yank traffic off a dead server faster than clients honor the TTL, and some ignore it entirely.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">GeoDNS and its limit</span>
+            <span class="card-badge badge-gold">route by location</span>
+          </div>
+          <div class="card-body">
+            <p>The authoritative server picks an answer based on where the <em>resolver</em> sits, sending users to a nearby region. Cheap global routing with no extra hop.</p>
+            <p>The catch: it sees the resolver, not the user. Someone on a distant public resolver gets routed by the resolver's location, not their own. For precise routing, anycast beats it (<a href="service-discovery.html">Discovery</a>).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Don't lean on DNS for fast failover or fine-grained load balancing. TTLs are honored inconsistently, and propagation is measured in minutes. Use it for coarse regional routing and let a real load balancer handle health and failover inside the region.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. TCP vs UDP ──────────────────────────────────────────── -->
+    <section class="section" id="tcp-udp">
+      <div class="section-header">
+        <div class="section-icon icon-purple">📦</div>
+        <h2>TCP vs UDP</h2>
+        <span class="section-tag">reliability you pay for, or speed you don't</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>TCP gives you a reliable, ordered byte stream: it handshakes to open a connection, acknowledges every segment, retransmits losses, and slows down under congestion. All of that costs round trips and head-of-line blocking — a lost packet stalls everything behind it until it's resent.</p>
+        <p>UDP gives you none of it. Fire a datagram and hope. No handshake, no ordering, no retransmit. That's a feature when late data is useless: in a video call, a dropped frame should be skipped, not resent stale.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Property</th><th>TCP</th><th>UDP</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Connection</td><td>Handshake first (1 RT)</td><td>None — just send</td></tr>
+          <tr><td>Delivery</td><td>Guaranteed, retransmitted</td><td>Best-effort, may drop</td></tr>
+          <tr><td>Ordering</td><td>In order</td><td>No guarantee</td></tr>
+          <tr><td>Head-of-line blocking</td><td>Yes — a loss stalls the stream</td><td>No — packets independent</td></tr>
+          <tr><td>Overhead</td><td>Higher (state, acks, congestion control)</td><td>Minimal</td></tr>
+          <tr><td>Fits</td><td>Web, APIs, databases, anything correctness-first</td><td>Video, voice, gaming, DNS, QUIC</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The interesting modern move is QUIC: it runs on UDP but rebuilds reliability, ordering, and encryption in user space — keeping TCP's guarantees while dodging its head-of-line blocking and slow handshakes. HTTP/3 rides on it. So "UDP" no longer means "unreliable" by default.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. HTTP VERSIONS ───────────────────────────────────────── -->
+    <section class="section" id="http">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🔢</div>
+        <h2>HTTP Versions</h2>
+        <span class="section-tag">each one fixed the last one's bottleneck</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The through-line across HTTP versions is a war on round trips and head-of-line blocking. Each version removed a place where requests had to wait in line.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  HTTP/1.1   one request at a time per connection. Response N blocks N+1.
+             Workaround: open 6 parallel connections and keep them alive.
+             ▼ still blocks: slow response holds up its whole connection
+
+  HTTP/2     multiplexing — many streams over ONE connection, interleaved.
+             Header compression. Server push (mostly unused).
+             ▼ but all streams share one TCP stream: a lost packet
+               stalls every stream (TCP-level head-of-line blocking)
+
+  HTTP/3     runs on QUIC (UDP). Streams are independent, so one lost
+             packet stalls only its own stream. Faster handshake
+             (crypto + transport in one). 0-RTT resumption.</pre>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Version</th><th>Transport</th><th>Fixed</th><th>Still limited by</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>HTTP/1.1</td><td>TCP</td><td>Keep-alive, pipelining</td><td>One in-flight response per connection</td></tr>
+          <tr><td>HTTP/2</td><td>TCP</td><td>Multiplexing, header compression</td><td>TCP head-of-line blocking across streams</td></tr>
+          <tr><td>HTTP/3</td><td>QUIC / UDP</td><td>Independent streams, faster handshake, 0-RTT</td><td>Newer, some middleboxes block UDP</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>You rarely need to design around HTTP versions, but naming the progression signals depth: "HTTP/2 solved application-layer head-of-line blocking but not the TCP-layer version; HTTP/3 moves to QUIC to fix that too." One sentence, and it lands.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. TLS ─────────────────────────────────────────────────── -->
+    <section class="section" id="tls">
+      <div class="section-header">
+        <div class="section-icon icon-red">🔒</div>
+        <h2>TLS: The Encryption Handshake</h2>
+        <span class="section-tag">a round trip for privacy, and where to pay it</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>TLS encrypts the connection and proves the server's identity via a certificate. The cost is the handshake: one extra round trip in TLS 1.3, two in the older TLS 1.2. On a cold connection that's added latency on top of TCP setup.</p>
+        <p>Two mitigations matter. <strong>Session resumption</strong> lets a returning client skip the full handshake with a cached key — even 0-RTT, sending data on the first packet. And <strong>TLS termination</strong> at the load balancer means the expensive crypto happens once at the edge, not on every app server.</p>
+      </div>
+
+      <div class="diagram">
+<pre>            Public internet                 Your network (trusted)
+   Client ═══════════════════════▶  Load Balancer ──────────────▶  App servers
+          encrypted (TLS)              │  decrypts here            plain HTTP
+                                       │  (TLS termination)        (or re-encrypted
+                                       ▼                            for zero-trust:
+                              certs, crypto centralized             mTLS everywhere)</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Terminating TLS at the edge simplifies certificate management and offloads CPU, but it means traffic inside your network is plaintext by default. Whether that's acceptable depends on your trust model — a zero-trust design re-encrypts internally with mTLS (<a href="security-basics.html">Security Basics</a>).</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>"TLS terminates at the load balancer" is a load-bearing sentence. It answers where certs live, why internal calls can be plain HTTP, and where the crypto cost is paid. But say it and you've implicitly decided your internal network is trusted — be ready to defend that or add mTLS.</div>
+      </div>
+    </section>
+
+    <!-- ── 6. CDN ─────────────────────────────────────────────────── -->
+    <section class="section" id="cdn">
+      <div class="section-header">
+        <div class="section-icon icon-green">🌍</div>
+        <h2>CDNs and Edge Delivery</h2>
+        <span class="section-tag">move the bytes closer to the user</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A CDN is a fleet of edge servers (PoPs) spread across the globe, each caching copies of your content. The user hits the nearest edge instead of your origin, cutting latency and offloading traffic. For static and cacheable content, this is the single biggest delivery win available — and the dominant cost line for anything media-heavy (<a href="video-streaming.html">Video Streaming</a>).</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Pull vs push</span>
+            <span class="card-badge badge-green">how content lands on the edge</span>
+          </div>
+          <div class="card-body">
+            <p><strong>Origin pull:</strong> the edge fetches from your origin on the first miss, then caches. Lazy, self-managing, the default.</p>
+            <p><strong>Push:</strong> you upload content to the CDN ahead of demand. More control, used for large predictable assets like video segments.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Cache key and invalidation</span>
+            <span class="card-badge badge-red">the hard half</span>
+          </div>
+          <div class="card-body">
+            <p>The edge keys on URL (plus chosen headers). Change content at the same URL and edges keep serving the old copy until the TTL expires or you purge it.</p>
+            <p>The standard fix is versioned URLs — <code>app.a1b2c3.js</code> — so new content gets a new key and old caches simply age out.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Put on a CDN what's static or reusable across users: images, video, CSS/JS, fonts, and cacheable API responses. Keep off it anything per-user or sensitive unless you gate access. For private content, <strong>signed URLs</strong> grant time-limited access to a specific object without making it public — the same mechanism that lets clients pull a paywalled video segment straight from the edge.</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The CDN is the first cache in a read's journey — browser, then CDN, then your gateway and application caches, then the database. It's the same caching logic applied at the edge, so the failure modes rhyme: staleness, invalidation, and cold-miss storms all live here too (<a href="caching.html">Caching</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">the request path on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Step</th><th>What it costs</th><th>How to cut it</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>DNS lookup</td><td>~20–120ms cold, ~0 warm</td><td>Caching + TTL tuning; keep it for coarse routing</td></tr>
+          <tr><td>TCP handshake</td><td>1 round trip</td><td>Keep-alive, connection pooling</td></tr>
+          <tr><td>TLS handshake</td><td>1 RT (1.3), 2 RT (1.2)</td><td>Session resumption, 0-RTT, edge termination</td></tr>
+          <tr><td>Request / response</td><td>1 RT to origin (TTFB)</td><td>CDN edge, HTTP/2+3 multiplexing</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>TCP</th><th>UDP</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Reliable, ordered, congestion-controlled</td><td>Best-effort, unordered, minimal</td></tr>
+          <tr><td>Web, APIs, DBs — correctness first</td><td>Video, voice, gaming, DNS, QUIC/HTTP3</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> DNS: coarse routing and caching, not fast failover. TCP vs UDP: reliability you pay round trips for, or speed you drop packets for. HTTP versions: a steady war on head-of-line blocking, ending at QUIC. TLS: terminate at the edge, decide if the inside is trusted. CDN: the first and closest cache — serve static content from the edge and keep egress off your origin.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

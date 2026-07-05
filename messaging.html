@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messaging | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Messaging</h1>
+  <p>Decoupling producers from consumers: absorbing spikes, isolating failure, and smoothing load — at the price of eventual consistency.</p>
+  <div class="hero-pills">
+    <span>Queues</span>
+    <span>Pub/sub</span>
+    <span>Log streaming</span>
+    <span>Delivery guarantees</span>
+    <span>Back-pressure</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHY ASYNC ───────────────────────────────────────────── -->
+    <section class="section" id="why">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🧵</div>
+        <h2>Why Async At All</h2>
+        <span class="section-tag">a buffer between producer and consumer</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A synchronous call ties the caller's fate to the callee's. If the downstream is slow, the caller waits; if it's down, the caller fails; if traffic spikes, the spike hits the callee at full force. A message broker inserts a buffer between them, and that buffer buys three things.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  SYNCHRONOUS                          ASYNCHRONOUS
+  producer ──call──▶ consumer          producer ──▶ [ queue ] ──▶ consumer
+      │  blocks on consumer                 │  returns now         │  drains at
+      │  fails if consumer down             │                      │  its own pace
+      ▼                                     ▼                      ▼
+  coupled: spike, slowness, and        decoupled: queue absorbs the spike,
+  failure all propagate upstream       survives consumer downtime, smooths load</pre>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">What it buys</span>
+            <span class="card-badge badge-green">the upside</span>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><strong>Spike absorption</strong> — the queue soaks up a burst the consumer couldn't take head-on.</li>
+              <li><strong>Failure isolation</strong> — a down consumer means a growing backlog, not a cascading outage.</li>
+              <li><strong>Load smoothing</strong> — bursty writes become a steady drain at the consumer's comfortable rate.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">What it costs</span>
+            <span class="card-badge badge-red">the price</span>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><strong>Eventual consistency</strong> — the work happens later, so reads can race ahead of it.</li>
+              <li><strong>Harder debugging</strong> — no single call stack; you trace a message across systems.</li>
+              <li><strong>Operational surface</strong> — the broker is one more thing to run, size, and monitor.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Async is not free speed — it's a trade. You move latency off the request path and pay with consistency and complexity (<a href="tradeoffs.html">Tradeoffs</a>). Use it when the work genuinely doesn't need to finish before you answer the user: sending email, transcoding, updating a search index, fanning out a feed.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. QUEUES ──────────────────────────────────────────────── -->
+    <section class="section" id="queues">
+      <div class="section-header">
+        <div class="section-icon icon-green">📥</div>
+        <h2>Message Queues</h2>
+        <span class="section-tag">work distribution, one consumer per message</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A queue is point-to-point work distribution. Producers enqueue tasks; a pool of <strong>competing consumers</strong> pulls from the queue, and each message is handled by exactly one of them. Add consumers and throughput rises — the queue is a natural load balancer for background work. This is the SQS / RabbitMQ model.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Visibility timeout</span>
+            <span class="card-badge badge-blue">in-flight protection</span>
+          </div>
+          <div class="card-body">
+            <p>When a consumer picks up a message, it's hidden — not deleted — for a timeout window. If the consumer finishes and acks, it's removed. If the consumer dies first, the timeout lapses and the message reappears for someone else. This is how a queue survives worker crashes without losing work.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Dead-letter queue</span>
+            <span class="card-badge badge-red">where poison goes</span>
+          </div>
+          <div class="card-body">
+            <p>A message that keeps failing would retry forever, blocking the line. After N attempts it's shunted to a <strong>dead-letter queue</strong> for inspection instead of looping. The DLQ is where you find the poison messages, bad payloads, and downstream bugs.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Visibility timeout plus retry means a message can be delivered more than once — a slow consumer's timeout lapses while it's still working, so the message is handed to a second worker. That's the at-least-once reality, and it's why consumers must be idempotent (<a href="concurrency-control.html">Concurrency Control</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 3. PUB/SUB ─────────────────────────────────────────────── -->
+    <section class="section" id="pubsub">
+      <div class="section-header">
+        <div class="section-icon icon-purple">📡</div>
+        <h2>Pub/Sub</h2>
+        <span class="section-tag">one message, many subscribers</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Where a queue delivers each message to one consumer, pub/sub <strong>fans out</strong> the same message to every subscriber. Producers publish to a <strong>topic</strong>; each subscriber gets its own copy. This is how one event drives many independent reactions without the producer knowing who's listening.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  QUEUE (one wins)                   PUB/SUB (all get it)
+                ┌─▶ consumer A               ┌─▶ email service
+  producer ─▶ Q ┤   (only one                │   (own copy)
+                └   handles it)   producer ─▶ topic ─┼─▶ analytics service
+                                             │   (own copy)
+   competing consumers,                      └─▶ search indexer
+   load distribution                             (own copy)
+                                        fan-out, independent reactions</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>One "order placed" event can fan out to the email service, the analytics pipeline, and the search indexer at once, each reacting on its own. Subscriptions come in two flavors: <strong>ephemeral</strong> (you only get messages published while you're connected) and <strong>durable</strong> (the broker holds your messages until you come back). Durable subscriptions are what make pub/sub reliable across consumer restarts.</p>
+      </div>
+    </section>
+
+    <!-- ── 4. LOG STREAMING ───────────────────────────────────────── -->
+    <section class="section" id="log">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🪵</div>
+        <h2>Event Streaming: The Log Model</h2>
+        <span class="section-tag">an append-only log you can replay</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Kafka and its kin are a different animal. Instead of deleting a message once consumed, the broker keeps an <strong>append-only log</strong>, partitioned for scale, retained for days or forever. Consumers track their own <strong>offset</strong> — a bookmark into the log — so they can replay history, reprocess after a bug, or add a brand-new consumer that reads from the beginning.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  A topic is split into PARTITIONS (the unit of parallelism and ordering):
+
+  partition 0:  [ m0 ][ m1 ][ m2 ][ m3 ][ m4 ]───▶ append
+  partition 1:  [ m0 ][ m1 ][ m2 ]────────────────▶ append   order guaranteed
+  partition 2:  [ m0 ][ m1 ][ m2 ][ m3 ]──────────▶ append   WITHIN a partition
+
+  Consumer group (each partition → exactly one consumer in the group):
+     consumer-A ── reads partition 0        offset: at m3
+     consumer-B ── reads partitions 1, 2    offsets tracked per partition
+
+  Parallelism is capped by partition count. More consumers than partitions
+  ⇒ the extras sit idle.</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Two consequences to remember. Ordering is guaranteed only <strong>within a partition</strong>, so anything that must stay ordered (all events for one user) has to hash to the same partition key. And <strong>partition count bounds parallelism</strong>: a consumer group can have at most one consumer per partition doing useful work, so you size partitions for your peak consumer count, not just your data volume (<a href="sharding-partitioning.html">Sharding</a>).</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The replayable log is why streaming underpins event sourcing, CDC, and stream processing. The same log feeds a real-time consumer and a batch reprocessing job reading old offsets — one source of truth, many readers at different positions (<a href="batch-stream-processing.html">Batch &amp; Stream</a>, <a href="distributed-transactions.html">CDC</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 5. DELIVERY GUARANTEES ─────────────────────────────────── -->
+    <section class="section" id="guarantees">
+      <div class="section-header">
+        <div class="section-icon icon-red">🎯</div>
+        <h2>Delivery Guarantees</h2>
+        <span class="section-tag">and why exactly-once is a trick</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Three levels, and the interviewer wants to hear that you know the middle one is the real default.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Guarantee</th><th>Means</th><th>Failure mode</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>At-most-once</td><td>Fire and forget; ack before processing</td><td>Messages can be lost on a crash</td></tr>
+          <tr><td>At-least-once</td><td>Ack after processing; redeliver if unsure</td><td>Messages can be processed twice</td></tr>
+          <tr><td>Exactly-once</td><td>Every message takes effect once, no more</td><td>Expensive; often not what it seems</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>"Exactly-once delivery" over a network is essentially impossible — the sender can never be sure an ack was lost or the message was, so it must choose to risk loss or risk duplication. What's achievable is an <strong>exactly-once effect</strong>: at-least-once delivery plus an idempotent consumer that ignores duplicates. When someone asks for exactly-once, the answer is "at-least-once with dedup" (<a href="concurrency-control.html">Concurrency Control</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 6. BACK-PRESSURE ───────────────────────────────────────── -->
+    <section class="section" id="backpressure">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🌊</div>
+        <h2>Back-Pressure</h2>
+        <span class="section-tag">when consumers fall behind</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A queue absorbs a spike, but an <em>unbounded</em> queue just hides a problem: if consumers are permanently slower than producers, the backlog grows without limit until memory or disk runs out. The buffer bought time, not a solution. <strong>Consumer lag</strong> — how far behind the newest message the consumers are — is the metric that tells you which is happening.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Response</th><th>How it helps</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Scale consumers</td><td>Add workers (up to the partition limit for logs) to drain faster</td></tr>
+          <tr><td>Bounded queues</td><td>Cap the buffer so the problem surfaces instead of hiding until OOM</td></tr>
+          <tr><td>Load shedding</td><td>Drop or sample low-priority messages under sustained overload</td></tr>
+          <tr><td>Producer throttling</td><td>Slow the producers so they can't outrun consumers indefinitely</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Rising lag is an early-warning signal, not a full alarm — the system still works, it's just falling behind. Alerting on lag catches a struggling consumer long before the backlog turns into dropped messages or a full disk (<a href="resilience-patterns.html">Resilience Patterns</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">queue vs pub/sub vs stream</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Queue</th><th>Pub/Sub</th><th>Log stream</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Delivery</td><td>One consumer per message</td><td>Every subscriber gets a copy</td><td>Every consumer group, by offset</td></tr>
+          <tr><td>After consume</td><td>Message deleted</td><td>Delivered, then gone</td><td>Retained; replayable</td></tr>
+          <tr><td>Ordering</td><td>Best-effort</td><td>Best-effort</td><td>Guaranteed within a partition</td></tr>
+          <tr><td>Replay</td><td>No</td><td>No</td><td>Yes — rewind the offset</td></tr>
+          <tr><td>Consumer model</td><td>Competing workers</td><td>Independent subscribers</td><td>Consumer groups</td></tr>
+          <tr><td>Canonical tool</td><td>SQS, RabbitMQ</td><td>SNS, Google Pub/Sub</td><td>Kafka, Pulsar, Kinesis</td></tr>
+          <tr><td>Best fit</td><td>Background jobs, task distribution</td><td>Event fan-out to many reactors</td><td>Event sourcing, CDC, stream processing</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Async trades latency-on-the-path for eventual consistency and complexity. Queue = one consumer per message and load distribution; pub/sub = fan-out to many; log = retained, replayable, ordered per partition. Delivery is at-least-once in practice, so make consumers idempotent — that's how you get an exactly-once effect. Watch consumer lag; an unbounded queue only postpones the overload.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

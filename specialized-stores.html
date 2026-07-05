@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Specialized Stores | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Specialized <span>Stores</span></h1>
+  <p>The right store for workloads that punish a general-purpose database: time series, analytics, graphs, blobs, and geospatial.</p>
+  <div class="hero-pills">
+    <span>Time series</span>
+    <span>Columnar / OLAP</span>
+    <span>Graph</span>
+    <span>Blob storage</span>
+    <span>Geospatial</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── INTRO ──────────────────────────────────────────────────── -->
+    <section class="section" id="intro">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🗃</div>
+        <h2>When General-Purpose Isn't Enough</h2>
+        <span class="section-tag">match the store to the access shape</span>
+      </div>
+      <div class="card-body" style="padding-bottom:0">
+        <p>A relational database is a great default and a bad fit for a handful of workloads that have a distinctive access shape. Each store below exists because one pattern — append-only time data, wide analytical scans, deep relationship traversal, huge binary payloads, or 2D proximity — punishes a general-purpose engine. The interview skill is hearing the tell in the question and naming the right store.</p>
+      </div>
+    </section>
+
+    <!-- ── 1. TIME SERIES ─────────────────────────────────────────── -->
+    <section class="section" id="timeseries">
+      <div class="section-header">
+        <div class="section-icon icon-green">📈</div>
+        <h2>Time Series</h2>
+        <span class="section-tag">append-only, time-bucketed, write-heavy</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Metrics, sensor readings, and events share a shape: massive append-only writes, always stamped with time, almost always queried by time range. Time-series stores (InfluxDB, TimescaleDB, Prometheus) exploit that. They partition by time window so recent data is hot and old data ages out, compress hard with <strong>delta encoding</strong> (store the difference between consecutive points, which are usually small), and <strong>downsample</strong> old data into coarser buckets you keep at lower resolution.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The tell: "per-second metrics," "sensor data," "monitor over time," retention tiers. When the write rate is enormous and every query has a time range, that's a time-series store, not a table with a timestamp column (<a href="metrics-logs-traces.html">Telemetry</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 2. COLUMNAR / OLAP ─────────────────────────────────────── -->
+    <section class="section" id="olap">
+      <div class="section-header">
+        <div class="section-icon icon-gold">📊</div>
+        <h2>Columnar / OLAP</h2>
+        <span class="section-tag">analytics scans want columns, not rows</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The real split is <strong>OLTP vs OLAP</strong>. Operational databases (OLTP) read and write whole rows — grab one order, update one user. Analytics (OLAP) scan one or two columns across millions of rows — "average price over all sales this year." Row storage forces analytics to read every column just to touch one. Columnar storage lays each column out contiguously, so a scan reads only what it needs and compresses beautifully because a column holds similar values.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  ROW STORE (OLTP)                      COLUMN STORE (OLAP)
+  [id,name,price][id,name,price]…       [id,id,id…][name,name…][price,price…]
+   read one row = one seek               read one column = one contiguous scan
+   great for "get order 42"              great for "SUM(price) over 10M rows"
+   analytics reads all columns           reads only the columns queried,
+   just to touch price                   compresses similar values hard</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Keep the two apart. Run analytics against your operational database and heavy scans lock up the store users depend on. The standard move is a separate warehouse — BigQuery, Redshift, ClickHouse — fed from the operational DB, so analysts scan columns without touching production (<a href="batch-stream-processing.html">Batch &amp; Stream</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 3. GRAPH ───────────────────────────────────────────────── -->
+    <section class="section" id="graph">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🕸</div>
+        <h2>Graph</h2>
+        <span class="section-tag">when traversal depth kills joins</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Relational joins get exponentially expensive as you traverse deeper. "Friends of friends of friends" is three self-joins on a huge table — brutal. A graph database (Neo4j, Neptune) stores nodes and edges so that following a relationship is a direct pointer hop, not a join. Adjacency is stored locally, so traversal cost scales with the answer size, not the table size.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Don't reach for a graph database just because your data "has relationships" — all data does. It earns its place only when deep, variable-depth traversal <em>is</em> the core workload: social graphs, fraud rings, recommendation paths. For a friends list one join deep, a relational table is simpler and faster. Most of the time, a graph DB is overkill (<a href="tradeoffs.html">Tradeoffs</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. BLOB / OBJECT STORAGE ───────────────────────────────── -->
+    <section class="section" id="blob">
+      <div class="section-header">
+        <div class="section-icon icon-red">🪣</div>
+        <h2>Blob / Object Storage</h2>
+        <span class="section-tag">the metadata-vs-payload pattern</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Object storage (S3 and its kin) is built for large binary payloads: a flat namespace of keys to objects, accessed over HTTP, with ~11 nines of durability and effectively unlimited scale. No filesystem semantics — no partial in-place edits, no directories, just get/put whole objects. It's cheap, durable, and not a database.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  THE STANDARD PATTERN: split metadata from payload
+
+  ┌──────────────┐        ┌──────────────────────────────┐
+  │  Database     │ id ──▶ │  Object storage (S3)          │
+  │  metadata:    │        │  the actual bytes:            │
+  │  owner, name, │        │  video.mp4, photo.jpg, backup │
+  │  size, s3_key │        └──────────────────────────────┘
+  └──────────────┘         payload never passes through your app servers
+
+  UPLOAD: client gets a PRESIGNED URL, uploads DIRECTLY to S3.
+  DOWNLOAD: same — client pulls straight from S3 (or a CDN in front).
+  LARGE FILES: multipart upload — split into parts, upload in parallel, resume.</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The load-bearing pattern across half the case studies: store searchable <strong>metadata</strong> in a database and the <strong>payload</strong> bytes in object storage, linked by a key. <strong>Presigned URLs</strong> grant time-limited permission so clients upload and download directly to storage, bypassing your servers entirely — your app never proxies gigabytes. <strong>Multipart upload</strong> splits large files into parallel, resumable parts (<a href="video-streaming.html">Video Streaming</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 5. GEOSPATIAL ──────────────────────────────────────────── -->
+    <section class="section" id="geospatial">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📍</div>
+        <h2>Geospatial Indexing</h2>
+        <span class="section-tag">"nearby" is a 2D problem</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A B-tree indexes one dimension. "Find drivers within 2km" is two-dimensional — a B-tree on latitude and one on longitude can't answer it efficiently, because a nearby point can be far in either coordinate alone. Geospatial indexes map 2D space onto a 1D orderable key so proximity becomes a range scan.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Geohash</span>
+            <span class="card-badge badge-green">prefix = proximity</span>
+          </div>
+          <div class="card-body">
+            <p>Recursively divide the map into a grid, encoding each cell as a string. Nearby points share a prefix, so a prefix match finds neighbors, and it indexes as plain text. The catch: two points can be adjacent on the map but sit across a cell boundary with different prefixes — so you check neighboring cells too.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Quadtree</span>
+            <span class="card-badge badge-gold">adaptive density</span>
+          </div>
+          <div class="card-body">
+            <p>Recursively split space into four quadrants, but only subdivide where points are dense. Dense cities get fine cells, empty ocean stays coarse. Adapts to uneven distribution better than a fixed grid, at the cost of a tree to maintain.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The tell: "nearby," "within X km," "closest." Name geohash or quadtree, mention the cell-boundary neighbor check, and note the modern libraries — Google's <strong>S2</strong> and Uber's <strong>H3</strong> — plus backing options like Redis GEO or PostGIS. The Ride Sharing question is built on this (<a href="ride-sharing.html">Ride Sharing</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">the tell → the store</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Store</th><th>Workload shape</th><th>Tools</th><th>The tell</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Time series</td><td>Append-only, time-range queries</td><td>InfluxDB, Timescale, Prometheus</td><td>"per-second metrics," "sensor data"</td></tr>
+          <tr><td>Columnar / OLAP</td><td>Scan few columns over many rows</td><td>BigQuery, Redshift, ClickHouse</td><td>"analytics," "aggregate over history"</td></tr>
+          <tr><td>Graph</td><td>Deep relationship traversal</td><td>Neo4j, Neptune</td><td>"friends of friends," "fraud ring"</td></tr>
+          <tr><td>Blob / object</td><td>Large binary payloads</td><td>S3, GCS, Azure Blob</td><td>"images," "video," "file upload"</td></tr>
+          <tr><td>Geospatial</td><td>2D nearest-neighbor</td><td>Redis GEO, PostGIS, S2, H3</td><td>"nearby," "within X km," "closest"</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Reach past the general-purpose DB only when the access shape demands it. Time series for append-heavy time data, columnar for analytical scans (kept off the operational DB), graph only when traversal is the workload, object storage for payloads with the metadata split, geospatial indexes for proximity. Hear the tell, name the store, move on.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

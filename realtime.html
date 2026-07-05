@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-Time Delivery | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Real-Time <span>Delivery</span></h1>
+  <p>Pushing data to clients instead of waiting for them to ask — and the stateful-connection problems that come with it.</p>
+  <div class="hero-pills">
+    <span>Long polling</span>
+    <span>SSE</span>
+    <span>WebSockets</span>
+    <span>Connection state</span>
+    <span>Fan-out at scale</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. THE OPTIONS LADDER ──────────────────────────────────── -->
+    <section class="section" id="ladder">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🪜</div>
+        <h2>The Options Ladder</h2>
+        <span class="section-tag">four ways to move a server-side event to a client</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The web is pull-based: clients ask, servers answer. Real-time delivery is the set of tricks for reversing that, so the server can push the moment something changes. There are four rungs, each one closer to a true push channel and each one more stateful than the last.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  SHORT POLLING          client asks every N seconds, mostly gets "nothing yet"
+    C ─req─▶ S  (empty)   ┐  simple, works everywhere
+    C ─req─▶ S  (empty)   ┼  wasteful; latency = poll interval
+    C ─req─▶ S  (data!)   ┘
+
+  LONG POLLING           client asks, server HOLDS the request until data exists
+    C ─req─────────▶ S    ┐  near-real-time on plain HTTP
+              (waits)     ┼  one connection per message; reconnect churn
+    C ◀──data── S  reopen ┘
+
+  SERVER-SENT EVENTS     one long-lived HTTP stream, server pushes many events
+    C ─req─▶ S            ┐  server → client only, auto-reconnect built in
+    C ◀═event═ S          ┼  text only, rides plain HTTP
+    C ◀═event═ S          ┘
+
+  WEBSOCKETS             upgrade HTTP once, then a full-duplex TCP channel
+    C ⇄ handshake ⇄ S     ┐  bidirectional, low overhead per message
+    C ⇄══════════⇄ S      ┼  stateful, needs its own scaling story
+    (both push anytime)   ┘</pre>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The jump that matters is from polling to persistent connections. Polling reuses the stateless request-response model, so it scales like any HTTP endpoint. SSE and WebSockets hold a connection open per client, which is where all the hard problems below start.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. CHOOSING ────────────────────────────────────────────── -->
+    <section class="section" id="choosing">
+      <div class="section-header">
+        <div class="section-icon icon-green">🎯</div>
+        <h2>Choosing Between Them</h2>
+        <span class="section-tag">direction, frequency, and how much complexity you can afford</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Reach for the simplest rung that meets the requirement. Three questions settle it: which direction does data flow, how often does it update, and how much connection machinery are you willing to run.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Technique</th><th>Direction</th><th>Latency</th><th>Cost / complexity</th><th>Best fit</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Short polling</td><td>Client pull</td><td>= poll interval</td><td>Trivial, but wasteful</td><td>Rare updates, small scale, quick hacks</td></tr>
+          <tr><td>Long polling</td><td>Server → client</td><td>Near real-time</td><td>Reconnect churn</td><td>Notifications where WebSockets are overkill</td></tr>
+          <tr><td>SSE</td><td>Server → client</td><td>Real-time</td><td>Low, auto-reconnect</td><td>Feeds, live scores, dashboards, notifications</td></tr>
+          <tr><td>WebSockets</td><td>Bidirectional</td><td>Real-time</td><td>High, stateful</td><td>Chat, games, collaborative editing, trading</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>SSE is the underused answer. If the client only needs to <em>receive</em> — a live feed, price ticks, a progress bar — SSE gives you real-time push over plain HTTP with reconnection handled for you, and none of the WebSocket scaling burden. Don't default to WebSockets just because it's the one everyone names; reach for it when you genuinely need the client to push too (<a href="chat-system.html">Chat System</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 3. CONNECTION STATE ────────────────────────────────────── -->
+    <section class="section" id="state">
+      <div class="section-header">
+        <div class="section-icon icon-gold">📌</div>
+        <h2>Connection State Is the Hard Part</h2>
+        <span class="section-tag">persistent connections make servers stateful</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A stateless HTTP server is easy: any box handles any request. A persistent connection breaks that. The client is now <em>bound</em> to one specific server for the life of the connection, and the system has to answer questions it never had to before.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Which server holds this user?</span>
+            <span class="card-badge badge-gold">routing to a connection</span>
+          </div>
+          <div class="card-body">
+            <p>To push to Bob, you must find the exact server holding Bob's socket. Two options: <strong>sticky routing</strong> (a load balancer pins Bob to one node) or a <strong>connection registry</strong> (a shared store mapping user → server, so any node can look up where to send).</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Is the connection still alive?</span>
+            <span class="card-badge badge-red">dead-connection detection</span>
+          </div>
+          <div class="card-body">
+            <p>TCP can stay "open" long after the client vanished (laptop closed, tunnel dropped). <strong>Heartbeats</strong> — periodic pings — detect the dead ones so you free memory and stop pushing into the void.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <span class="card-title">Reconnect and resume</span>
+          <span class="card-badge badge-blue">picking up where it dropped</span>
+        </div>
+        <div class="card-body">
+          <p>Connections drop constantly — phones change networks, servers deploy. The client reconnects with <strong>exponential backoff and jitter</strong> so a mass disconnect doesn't become a synchronized reconnect stampede (<a href="resilience-patterns.html">Resilience Patterns</a>). On reconnect it sends a <strong>last-event-id</strong> so the server can replay whatever was missed during the gap, rather than losing it.</p>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Sticky routing is the tempting shortcut and a trap at scale: it undermines even load balancing and turns any deploy into a mass reconnect, because every connection on a restarting node drops at once. A connection registry plus a fan-out backbone scales better, at the cost of a lookup on every push.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. SCALING TO A MILLION ────────────────────────────────── -->
+    <section class="section" id="scale">
+      <div class="section-header">
+        <div class="section-icon icon-purple">📈</div>
+        <h2>Scaling to a Million Connections</h2>
+        <span class="section-tag">a dedicated tier and a pub/sub backbone</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Each open connection costs memory (buffers, TLS state — order of tens of KB), so a million connections is real RAM and file-descriptor pressure. The standard shape separates the connection-holding tier from everything else, and uses a pub/sub backbone to fan messages out to whichever gateway holds the target.</p>
+      </div>
+
+      <div class="diagram">
+<pre>   millions of clients
+        │  │  │  (WebSocket / SSE)
+        ▼  ▼  ▼
+  ┌───────────────────────────────┐   Connection gateways: a dedicated tier
+  │  GW-1     GW-2     GW-3   ...  │   whose only job is holding sockets.
+  └───┬─────────┬─────────┬───────┘   Scale this independently of app logic.
+      │         │         │
+      └─────────┼─────────┘
+                ▼
+        ┌───────────────┐             Pub/sub backbone (Redis / Kafka):
+        │   pub / sub    │            a message for user X is published;
+        │   backbone     │            the gateway holding X is subscribed
+        └───────┬───────┘             and delivers it. No gateway-to-gateway
+                ▼                      mesh needed.
+        ┌───────────────┐
+        │  app services  │            Business logic stays stateless behind
+        └───────────────┘             the gateway tier.</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The gateways become stateless in the way that counts: they hold connections but no business logic, so you can add nodes freely. On deploy, you <strong>drain</strong> a gateway — stop new connections, let clients reconnect elsewhere with backoff — instead of dropping everything at once (<a href="scaling-patterns.html">Scaling Patterns</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 5. DELIVERY SEMANTICS ──────────────────────────────────── -->
+    <section class="section" id="delivery">
+      <div class="section-header">
+        <div class="section-icon icon-red">✅</div>
+        <h2>Delivery Over Flaky Links</h2>
+        <span class="section-tag">acks, buffers, and per-channel order</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A pushed message can vanish: the connection dropped between send and receive, and the server never knew. "I sent it" is not "they got it." Guaranteeing delivery over an unreliable link needs three pieces.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Piece</th><th>What it does</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Client acks</td><td>The client confirms receipt; unacked messages are considered undelivered and eligible for resend.</td></tr>
+          <tr><td>Server-side buffer</td><td>Hold recent messages per client until acked, so a reconnecting client can be replayed from where it left off.</td></tr>
+          <tr><td>Per-channel ordering</td><td>Sequence numbers within a conversation or topic, so the client can order and dedup even if delivery is out of order.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Ack-plus-resend means a message can arrive twice — the ack got lost, so the server resends something the client already had. That's at-least-once delivery, and the fix is the same everywhere: the client dedups on message ID, making reprocessing harmless (<a href="messaging.html">Messaging</a>, <a href="concurrency-control.html">Concurrency Control</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">the four techniques on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Technique</th><th>Latency</th><th>Direction</th><th>Cost</th><th>Best fit</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Short polling</td><td>= interval</td><td>Client pull</td><td>Trivial, wasteful</td><td>Rare updates, small scale</td></tr>
+          <tr><td>Long polling</td><td>Near real-time</td><td>Server → client</td><td>Reconnect churn</td><td>Simple notifications</td></tr>
+          <tr><td>SSE</td><td>Real-time</td><td>Server → client</td><td>Low, auto-reconnect</td><td>Feeds, dashboards, live scores</td></tr>
+          <tr><td>WebSockets</td><td>Real-time</td><td>Bidirectional</td><td>High, stateful</td><td>Chat, games, collaboration</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Pick the lowest rung that fits: SSE for server-push-only, WebSockets only when the client must push too. Persistent connections make servers stateful — solve it with a connection registry and a pub/sub backbone, not sticky routing. Scale connections in a dedicated gateway tier you can drain on deploy. Guarantee delivery with client acks, a server buffer, and per-channel sequence numbers, and dedup on the client because delivery is at-least-once.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

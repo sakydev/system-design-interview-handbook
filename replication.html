@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Replication | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Replication</h1>
+  <p>Copies of data for durability, read scale, and failover. The models, the lag they introduce, and what breaks when the leader dies.</p>
+  <div class="hero-pills">
+    <span>Leader-follower</span>
+    <span>Sync vs async</span>
+    <span>Failover</span>
+    <span>Multi-leader</span>
+    <span>Quorum</span>
+    <span>WAL</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHY REPLICATE ───────────────────────────────────────── -->
+    <section class="section" id="why">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🪞</div>
+        <h2>Why Replicate</h2>
+        <span class="section-tag">not the same problem as sharding</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Replication keeps multiple copies of the <em>same</em> data. It buys four things: <strong>durability</strong> (a dead node doesn't lose data), <strong>read scaling</strong> (spread reads across copies), <strong>geographic locality</strong> (a copy near each region), and <strong>failover</strong> (promote a copy when the primary dies).</p>
+        <p>This is a different problem from sharding. Sharding splits data so each node holds a <em>part</em>; replication copies data so each node holds the <em>same</em> part. They're orthogonal, and most real systems do both — shard for capacity, replicate each shard for durability and reads (<a href="sharding-partitioning.html">Sharding</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 2. LEADER-FOLLOWER ─────────────────────────────────────── -->
+    <section class="section" id="leader-follower">
+      <div class="section-header">
+        <div class="section-icon icon-green">👑</div>
+        <h2>Leader-Follower</h2>
+        <span class="section-tag">one writer, many readers</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The most common model: one <strong>leader</strong> takes all writes, then streams changes to <strong>followers</strong> that serve reads. Writes have a single ordering point (no write conflicts), and reads scale by adding followers. The tension is in <em>when</em> a write is considered done.</p>
+      </div>
+
+      <div class="diagram">
+<pre>            writes                    reads
+              │                    ┌────┴────┬─────────┐
+              ▼                    ▼         ▼          ▼
+         ┌─────────┐  replicate  ┌──────┐ ┌──────┐  ┌──────┐
+         │ LEADER  │ ──────────▶ │ foll │ │ foll │  │ foll │
+         └─────────┘             └──────┘ └──────┘  └──────┘
+
+  SYNC replication:  leader waits for follower ack before confirming write
+                     → no data loss on failover, but slower writes
+  ASYNC replication: leader confirms immediately, replicates in background
+                     → fast writes, but a lagging follower can lose recent data</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p><strong>Replication lag</strong> is the gap between a write hitting the leader and reaching a follower. Read from a lagging follower right after writing and your own change is missing — a read-your-writes violation. This is where session guarantees come in: pin a user to the leader for their own reads, or track the version they've seen (<a href="consistency-models.html">Consistency Models</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 3. FAILOVER ────────────────────────────────────────────── -->
+    <section class="section" id="failover">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🔀</div>
+        <h2>Failover</h2>
+        <span class="section-tag">promoting a follower when the leader dies</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>When the leader dies, the system detects it, picks a follower, and promotes it. Sounds simple; three things make it hard.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Hazard</th><th>What goes wrong</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Detection</td><td>Can't tell "dead" from "slow" — promote too eagerly and you cause outages, too slowly and you extend one</td></tr>
+          <tr><td>Split brain</td><td>The old leader comes back thinking it's still leader — now two leaders take conflicting writes</td></tr>
+          <tr><td>Lost writes</td><td>With async replication, writes acked but not yet replicated vanish when a behind follower is promoted</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Async replication plus failover means you can lose acknowledged writes: the leader told the client "committed," died before replicating, and the new leader never saw it. That's a real durability hole, and the fix — synchronous replication to at least one follower — costs write latency. Choosing where on that line to sit is the tradeoff. Leader election itself needs consensus to avoid split brain (<a href="consensus.html">Consensus</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. MULTI-LEADER ────────────────────────────────────────── -->
+    <section class="section" id="multi-leader">
+      <div class="section-header">
+        <div class="section-icon icon-purple">👥</div>
+        <h2>Multi-Leader</h2>
+        <span class="section-tag">writes in many places, conflicts to resolve</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>With multiple leaders — typically one per region — each takes writes locally and replicates to the others. Writes are fast and local everywhere, and no single leader is a bottleneck or a distant round trip. The price is <strong>write conflicts</strong>: two regions can edit the same record at the same time, and both are "correct" locally.</p>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Resolving conflicts is the whole problem. <strong>Last-write-wins</strong> is simplest and silently drops one of the two writes — sometimes fine, sometimes data loss you'll regret. <strong>CRDTs</strong> (conflict-free replicated data types) are data structures designed so concurrent updates merge deterministically without loss — the right tool for counters, sets, and collaborative text, at the cost of constrained operations. Multi-leader is the write side of active-active regions (<a href="multi-region.html">Multi-Region</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 5. LEADERLESS / QUORUM ─────────────────────────────────── -->
+    <section class="section" id="quorum">
+      <div class="section-header">
+        <div class="section-icon icon-red">🗳</div>
+        <h2>Leaderless / Quorum</h2>
+        <span class="section-tag">Dynamo-style: write to many, read from many</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Leaderless stores (Dynamo, Cassandra) drop the leader entirely. A client writes to several replicas and reads from several, and overlap guarantees freshness. With <strong>N</strong> replicas, requiring <strong>W</strong> to ack a write and <strong>R</strong> to answer a read, the rule <strong>W + R &gt; N</strong> forces every read set to overlap every write set by at least one up-to-date replica.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  N = 3 replicas.  W = 2, R = 2.   W + R = 4 > 3  ✓
+
+  write ─▶ [R1] [R2] [R3]     ack from 2 (W=2) → write succeeds
+              ✓    ✓    ✗
+  read  ◀─ [R1] [R2] [R3]     ask 2 (R=2); at least one overlaps the write
+              ✓         ✓      → the reader sees the latest value
+
+  Tuning:  W=N (all)  → strong writes, slow, fragile to one node down
+           R=1        → fast reads, weaker guarantee
+           W+R ≤ N    → fast but may read stale data</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Two repair mechanisms keep replicas honest. <strong>Read repair</strong>: when a read notices a stale replica, it writes the fresh value back. <strong>Anti-entropy</strong>: a background process compares replicas and reconciles differences. And a <strong>sloppy quorum</strong> with <strong>hinted handoff</strong> keeps writes flowing during a partition — a temporary node accepts the write and hands it off when the real owner returns, trading strictness for availability.</p>
+      </div>
+    </section>
+
+    <!-- ── 6. WAL ─────────────────────────────────────────────────── -->
+    <section class="section" id="wal">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🪵</div>
+        <h2>Write-Ahead Logs</h2>
+        <span class="section-tag">the durability primitive underneath it all</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Underneath every model above sits one idea: <strong>log first, apply second</strong>. Before a database changes a page, it appends the change to a write-ahead log on durable storage. If the process crashes mid-operation, it replays the log on restart and recovers. The log is the source of truth; the data files are a materialized view of it.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The WAL is also the replication stream — followers apply the leader's log to stay in sync — and the basis of <strong>change data capture</strong>: tail the WAL to turn every database change into an event feed for search indexes, caches, and downstream services (<a href="distributed-transactions.html">Distributed Transactions</a>). One mechanism, three jobs: crash recovery, replication, and CDC. Naming that connection signals real depth.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">models and quorum on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Model</th><th>Write path</th><th>Conflict risk</th><th>Best fit</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Leader-follower</td><td>One leader</td><td>None (single writer)</td><td>Read scaling, most systems</td></tr>
+          <tr><td>Multi-leader</td><td>Leader per region</td><td>High — needs resolution</td><td>Multi-region local writes</td></tr>
+          <tr><td>Leaderless / quorum</td><td>Write to W of N</td><td>Handled by versioning</td><td>High availability, tunable</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Quorum (N=3)</th><th>Gives</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>W=2, R=2</td><td>Strong-ish reads, tolerates one node down — the common default</td></tr>
+          <tr><td>W=3, R=1</td><td>Fast reads, slow/fragile writes</td></tr>
+          <tr><td>W=1, R=1</td><td>Fast both ways, may read stale (W+R ≤ N)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Replication ≠ sharding — copies vs splits, most systems do both. Leader-follower for read scale; sync vs async is the durability-vs-latency knob, and async can lose acked writes on failover. Multi-leader for local writes at the cost of conflict resolution. Quorum: W+R&gt;N guarantees overlap. Underneath everything, the WAL logs first and applies second — the same log that does crash recovery, replication, and CDC.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

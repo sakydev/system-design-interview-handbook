@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caching | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Caching</h1>
+  <p>The highest-leverage scaling tool there is, and the bugs it invites. Where caches live, how they're written and invalidated, and how they fail.</p>
+  <div class="hero-pills">
+    <span>Cache-aside</span>
+    <span>Write strategies</span>
+    <span>Eviction</span>
+    <span>Invalidation</span>
+    <span>Stampede</span>
+    <span>Hot keys</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHERE CACHES LIVE ───────────────────────────────────── -->
+    <section class="section" id="layers">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🪜</div>
+        <h2>Where Caches Live</h2>
+        <span class="section-tag">a read's journey through every layer</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Caching isn't one thing in one place. A read passes through a stack of caches, each closer to the user and cheaper to hit than the last. The art is stopping the read as early as possible.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  request ─▶ ┌─────────────┐  hit → done (0 network)
+             │  Browser     │  local, per-user
+             └──────┬──────┘  miss ▼
+             ┌─────────────┐  hit → served from the edge
+             │  CDN         │  static/near-static (Networking Basics)
+             └──────┬──────┘  miss ▼
+             ┌─────────────┐  hit → skip app logic
+             │  Gateway/edge│
+             └──────┬──────┘  miss ▼
+             ┌─────────────┐  hit → skip the DB   ← the big one:
+             │  App cache   │  Redis / Memcached      Redis in front of the DB
+             └──────┬──────┘  miss ▼
+             ┌─────────────┐  DB internal caches (buffer pool)
+             │  Database    │  the source of truth
+             └─────────────┘</pre>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Each layer catches what the ones above missed. The browser and CDN handle static content (<a href="networking-basics.html">Networking Basics</a>); the application cache — Redis or Memcached in front of the database — is the one you design most deliberately, and the rest of this page is mostly about it.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. CACHE-ASIDE ─────────────────────────────────────────── -->
+    <section class="section" id="cache-aside">
+      <div class="section-header">
+        <div class="section-icon icon-green">↩️</div>
+        <h2>Cache-Aside</h2>
+        <span class="section-tag">the default read pattern</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The default and most common pattern: the application checks the cache, and on a miss reads the database and populates the cache itself. The cache sits <em>beside</em> the data path, and the app owns the logic.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  read(key):
+    v = cache.get(key)
+    if v is not None:  return v          ── HIT
+    v = db.read(key)                     ── MISS
+    cache.set(key, v, ttl)               populate for next time
+    return v</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Simple and resilient: if the cache is down, reads fall through to the database — degraded, not broken. Two things to name. Only requested data is cached (lazy population), so the first read of anything is always a miss. And if the cache dies, every read hits the database at once — which is why the failure modes below matter.</p>
+      </div>
+    </section>
+
+    <!-- ── 3. WRITE STRATEGIES ────────────────────────────────────── -->
+    <section class="section" id="writes">
+      <div class="section-header">
+        <div class="section-icon icon-gold">✍️</div>
+        <h2>Write Strategies</h2>
+        <span class="section-tag">keeping cache and store in step</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Reads are the easy half. When data changes, you choose how the write touches cache and database, trading write latency against consistency and durability.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Strategy</th><th>How</th><th>Trade</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Write-through</td><td>Write cache and DB together, synchronously</td><td>Cache always fresh; every write pays both hops</td></tr>
+          <tr><td>Write-behind</td><td>Write cache now, flush to DB async later</td><td>Fast writes; data loss if the cache dies before flush</td></tr>
+          <tr><td>Write-around</td><td>Write DB only; cache fills on later reads</td><td>Avoids caching write-only data; first read misses</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Match the strategy to the access pattern. Write-through when reads follow writes closely and freshness matters. Write-behind when write throughput is the constraint and you can tolerate a small loss window. Write-around for data written far more than it's read, so you don't pollute the cache with entries nobody reads back (<a href="tradeoffs.html">Tradeoffs</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. EVICTION & INVALIDATION ─────────────────────────────── -->
+    <section class="section" id="eviction">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🗑</div>
+        <h2>Eviction &amp; Invalidation</h2>
+        <span class="section-tag">the two hard things, earned</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Two separate questions. <strong>Eviction</strong>: the cache is full, what do you drop? <strong>Invalidation</strong>: the underlying data changed, how does the cache stop serving stale copies? Eviction is a capacity policy; invalidation is a correctness problem, and it's genuinely hard.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Eviction policies</span>
+            <span class="card-badge badge-purple">what to drop</span>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><strong>LRU</strong> — drop least recently used. The default; assumes recent = likely again.</li>
+              <li><strong>LFU</strong> — drop least frequently used. Better for stable hot sets.</li>
+              <li><strong>TTL</strong> — expire after a fixed time, regardless of use.</li>
+            </ul>
+            <p>Size the cache with the 80/20 rule — roughly 20% of data serves 80% of reads (<a href="estimation.html">Estimation</a>).</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Invalidation approaches</span>
+            <span class="card-badge badge-red">how to stay fresh</span>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><strong>TTL expiry</strong> — accept staleness up to the TTL. Simplest, no write coordination.</li>
+              <li><strong>Explicit</strong> — delete the key on write. Fresh, but every writer must remember.</li>
+              <li><strong>Event-driven</strong> — invalidate via a CDC stream off the DB log, so nothing is forgotten (<a href="distributed-transactions.html">CDC</a>).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The reason "there are only two hard things, and one is cache invalidation" is earned: the moment you cache, you have two copies that can disagree, and every write must decide how to reconcile them. TTL trades freshness for simplicity; explicit invalidation trades simplicity for freshness and breaks the instant one write path forgets to invalidate.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. FAILURE MODES ───────────────────────────────────────── -->
+    <section class="section" id="failures">
+      <div class="section-header">
+        <div class="section-icon icon-red">💥</div>
+        <h2>Failure Modes</h2>
+        <span class="section-tag">the four that come up by name</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Caches fail in specific, named ways, and each has a standard mitigation. Knowing them by name is a strong signal in an interview.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  STAMPEDE / thundering herd
+    a hot key expires → thousands of requests miss at once → all hit the DB
+    fix: lock so one request rebuilds while others wait; request coalescing;
+         probabilistic early refresh before expiry
+
+  HOT KEY
+    one key gets so much traffic it overloads a single cache node
+    fix: replicate the key across nodes; add a local in-process cache
+
+  PENETRATION
+    requests for a key that DOESN'T exist always miss and hit the DB
+    fix: cache the negative result; a Bloom filter to reject known-absent keys
+
+  AVALANCHE
+    many keys expire together (or the cache tier restarts) → mass miss storm
+    fix: jitter the TTLs so they don't expire in sync; warm the cache on start</pre>
+      </div>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Failure</th><th>Cause</th><th>Mitigation</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Stampede</td><td>Hot key expires, all miss at once</td><td>Locking, request coalescing, early refresh</td></tr>
+          <tr><td>Hot key</td><td>One key overloads one node</td><td>Key replication, local caching</td></tr>
+          <tr><td>Penetration</td><td>Missing keys always miss</td><td>Negative caching, Bloom filter</td></tr>
+          <tr><td>Avalanche</td><td>Mass simultaneous expiry / cold restart</td><td>Jittered TTLs, cache warming</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Notice the shared root: a cache miss is only cheap when it's rare. Every failure here is a moment when misses become simultaneous, and the fixes all work by spreading them out in time (jitter, early refresh) or collapsing them into one (locking, coalescing). The database behind the cache was never sized for the uncached load (<a href="resilience-patterns.html">Resilience Patterns</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">strategies and failures on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Write strategy</th><th>Fresh?</th><th>Best for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Write-through</td><td>Always</td><td>Read-after-write, freshness matters</td></tr>
+          <tr><td>Write-behind</td><td>Eventually</td><td>Write-heavy, tolerates a loss window</td></tr>
+          <tr><td>Write-around</td><td>On next read</td><td>Write-mostly data</td></tr>
+          <tr><td>Cache-aside (read)</td><td>Up to TTL</td><td>The default read path</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Failure</th><th>Mitigation</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Stampede</td><td>Locking, coalescing, probabilistic early refresh</td></tr>
+          <tr><td>Hot key</td><td>Key replication, local cache</td></tr>
+          <tr><td>Penetration</td><td>Negative caching, Bloom filter</td></tr>
+          <tr><td>Avalanche</td><td>Jittered TTLs, cache warming</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> A read walks a stack of caches — stop it as early as you can. Cache-aside is the default; the app populates on miss and degrades gracefully if the cache dies. Pick a write strategy by access pattern. Invalidation is the hard part because caching means two copies that can disagree. And name the failure modes — stampede, hot key, penetration, avalanche — because a cache miss is only cheap when it's rare.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

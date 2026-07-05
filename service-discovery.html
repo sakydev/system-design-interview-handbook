@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Load Balancing &amp; Discovery | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Load Balancing &amp; <span>Discovery</span></h1>
+  <p>Getting every request to a healthy instance: the algorithms that spread load, the layers that route it, and how services find each other.</p>
+  <div class="hero-pills">
+    <span>LB algorithms</span>
+    <span>L4 vs L7</span>
+    <span>Health checks</span>
+    <span>Service registry</span>
+    <span>API gateway</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. ALGORITHMS ──────────────────────────────────────────── -->
+    <section class="section" id="algorithms">
+      <div class="section-header">
+        <div class="section-icon icon-blue">⚖️</div>
+        <h2>Load Balancing Algorithms</h2>
+        <span class="section-tag">how to pick which instance gets the request</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Given a pool of healthy instances, the load balancer picks one per request. The algorithm choice matters when requests aren't uniform — some are slow, some instances are bigger, some clients benefit from landing on the same node twice.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Algorithm</th><th>How it works</th><th>Best for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Round robin</td><td>Next instance in rotation</td><td>Uniform requests, equal instances</td></tr>
+          <tr><td>Weighted</td><td>Round robin biased by capacity</td><td>Mixed instance sizes</td></tr>
+          <tr><td>Least connections</td><td>Fewest active connections wins</td><td>Long-lived or uneven-duration requests</td></tr>
+          <tr><td>Least response time</td><td>Fastest-responding instance wins</td><td>Latency-sensitive, variable backends</td></tr>
+          <tr><td>IP / consistent hash</td><td>Hash the key to a stable instance</td><td>Session affinity, cache locality</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Round robin is the safe default. Reach for <strong>least connections</strong> when request durations vary a lot — round robin can pile short and long requests unevenly. Reach for <strong>consistent hashing</strong> when landing on the same instance twice is valuable, like keeping a user's data in one node's local cache (<a href="sharding-partitioning.html">Sharding</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 2. L4 vs L7 ────────────────────────────────────────────── -->
+    <section class="section" id="l4-l7">
+      <div class="section-header">
+        <div class="section-icon icon-green">🧅</div>
+        <h2>L4 vs L7</h2>
+        <span class="section-tag">how deep the balancer looks</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A load balancer can operate at two layers. <strong>L4</strong> works at the transport level — it sees IPs and ports, forwards packets, and never opens the payload. <strong>L7</strong> works at the application level — it terminates the connection, reads the HTTP request, and can route on path, header, or cookie.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  L4 (transport)                        L7 (application)
+  sees: IP : port                       sees: full HTTP request
+  ┌──────────────┐                      ┌──────────────────────────┐
+  │  forward the │  ──▶ backend         │  GET /api/*  ──▶ api pool  │
+  │  TCP packets │      (blind to        │  GET /img/*  ──▶ cdn pool  │
+  │  fast, cheap │       content)        │  header: beta ──▶ canary   │
+  └──────────────┘                      └──────────────────────────┘
+   can't route by URL,                   routing, TLS termination,
+   can't retry a request                 retries, rewrites — at a cost</pre>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>L4</th><th>L7</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Sees</td><td>IP, port, TCP</td><td>Full HTTP: path, headers, cookies</td></tr>
+          <tr><td>Can do</td><td>Fast forwarding, any protocol</td><td>Path routing, TLS termination, retries, rewrites</td></tr>
+          <tr><td>Cost</td><td>Minimal overhead</td><td>Terminates and parses — more CPU</td></tr>
+          <tr><td>Use when</td><td>Raw throughput, non-HTTP traffic</td><td>Smart routing on HTTP semantics</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Most web systems use L7 at the edge because routing by path and terminating TLS there is worth the CPU (<a href="networking-basics.html">Networking Basics</a>). L4 shows up where you need raw speed or non-HTTP protocols, or as a first hop in front of an L7 tier.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. HEALTH CHECKS ───────────────────────────────────────── -->
+    <section class="section" id="health">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🩺</div>
+        <h2>Health Checks</h2>
+        <span class="section-tag">knowing which instances can take traffic</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The balancer only routes to instances it believes are healthy, so it constantly probes them. <strong>Active</strong> checks send a periodic request and watch for a good response. <strong>Passive</strong> checks infer health from real traffic — a burst of errors or timeouts marks an instance down without a separate probe.</p>
+        <p>Checks also vary in depth. A <strong>shallow</strong> check confirms the process is up ("return 200 on /health"). A <strong>deep</strong> check verifies dependencies too — can it reach the database, the cache, the downstream service.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Deep health checks are a double-edged tool. If every instance's health check pings a shared database and that database hiccups, every instance reports unhealthy <em>at once</em> — and the balancer takes the entire fleet out of rotation over a blip. A shared dependency failing should degrade service, not vanish the whole pool. Keep the check shallow, or fail it only on sustained, local problems (<a href="resilience-patterns.html">Resilience Patterns</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. SERVICE DISCOVERY ───────────────────────────────────── -->
+    <section class="section" id="discovery">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🛰</div>
+        <h2>Service Discovery</h2>
+        <span class="section-tag">finding instances that come and go</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>In a dynamic fleet, instances start, stop, crash, and autoscale constantly. Nobody can hard-code addresses. A <strong>service registry</strong> is the live directory: instances <strong>register</strong> on startup and send heartbeats; they <strong>deregister</strong> on shutdown, or the registry evicts them when heartbeats stop. Callers ask the registry where a service lives.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Client-side discovery</span>
+            <span class="card-badge badge-blue">caller picks</span>
+          </div>
+          <div class="card-body">
+            <p>The client queries the registry, gets the list of instances, and load-balances itself. Fewer hops and full control, but every client needs the discovery logic and a fresh view of the registry.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Server-side discovery</span>
+            <span class="card-badge badge-green">balancer picks</span>
+          </div>
+          <div class="card-body">
+            <p>The client just calls a stable load balancer, which consults the registry and forwards. Clients stay dumb; the routing tier owns discovery. One more hop, one more thing to run.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The registry can be stale in both directions. It may still list an instance that just died (calls fail until it's evicted) or not yet list one that just started (traffic misses it). Short heartbeat intervals and retries on the caller side paper over the gap. The registry itself needs strong consistency for membership, which is why it's usually built on a consensus store (<a href="consensus.html">Consensus</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 5. API GATEWAY ─────────────────────────────────────────── -->
+    <section class="section" id="gateway">
+      <div class="section-header">
+        <div class="section-icon icon-red">🚪</div>
+        <h2>API Gateway</h2>
+        <span class="section-tag">edge concerns in one place</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>An API gateway is the single front door to a system of services. It handles the cross-cutting edge concerns you don't want scattered across every service: authentication, rate limiting, routing, request shaping, and response aggregation. One place to enforce policy, one place clients target.</p>
+      </div>
+
+      <div class="diagram">
+<pre>   clients
+      │
+      ▼
+  ┌─────────────────────────────────────────┐
+  │            API GATEWAY                    │
+  │  authn · rate limit · routing · shaping   │
+  └───┬───────────┬───────────┬───────────────┘
+      ▼           ▼           ▼
+   user svc    order svc    search svc     (internal services stay focused
+                                            on business logic, not edge policy)</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The terms blur on purpose. A <strong>reverse proxy</strong> forwards requests to backends. A <strong>load balancer</strong> spreads them across instances. An <strong>API gateway</strong> adds application-aware policy on top. In practice one component often does all three, which is why the words get used interchangeably — the distinction is the <em>responsibility</em>, not the box (<a href="security-basics.html">Security Basics</a>, <a href="rate-limiter.html">Rate Limiter</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 6. GLOBAL ──────────────────────────────────────────────── -->
+    <section class="section" id="global">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🌍</div>
+        <h2>Global Load Balancing</h2>
+        <span class="section-tag">routing users across regions</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Everything above balances within one region. Across regions, two mechanisms send a user to the right one. <strong>GeoDNS</strong> answers a DNS query with the nearest region's address based on the resolver's location. <strong>Anycast</strong> advertises one IP from many locations, and the network routes packets to the closest — routing at the network layer, so it reacts faster than DNS and needs no TTL wait.</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>GeoDNS is simple but coarse and slow to fail over — it sees the resolver, not the user, and is bound by TTLs (<a href="networking-basics.html">Networking Basics</a>). Anycast is more precise and reroutes near-instantly when a location goes dark, which is why CDNs and DNS providers run on it. Getting the user to the right region is only half the job; what happens to their <em>data</em> across regions is a separate, harder problem (<a href="multi-region.html">Multi-Region</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">algorithms and layers on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Algorithm</th><th>How it works</th><th>Best for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Round robin</td><td>Rotate through instances</td><td>Uniform requests — the default</td></tr>
+          <tr><td>Weighted</td><td>Biased by capacity</td><td>Mixed instance sizes</td></tr>
+          <tr><td>Least connections</td><td>Fewest active wins</td><td>Variable request durations</td></tr>
+          <tr><td>Least response time</td><td>Fastest wins</td><td>Latency-sensitive backends</td></tr>
+          <tr><td>Consistent hash</td><td>Key → stable instance</td><td>Session affinity, cache locality</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th></th><th>L4</th><th>L7</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Sees</td><td>IP, port</td><td>Full HTTP</td></tr>
+          <tr><td>Can do</td><td>Fast forwarding</td><td>Path routing, TLS term, retries</td></tr>
+          <tr><td>Use when</td><td>Throughput, any protocol</td><td>Smart HTTP routing</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Round robin by default; least-connections for uneven requests; consistent hash for affinity. L7 at the edge for routing and TLS, L4 for raw speed. Keep health checks shallow so a shared dependency doesn't take the whole fleet down. A registry with heartbeats handles a fleet that's always changing, and it's stale in both directions — retry. Gateway, load balancer, and reverse proxy are three responsibilities that often live in one box.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

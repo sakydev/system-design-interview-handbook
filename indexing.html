@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indexing &amp; Storage Engines | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Indexing &amp; <span>Storage Engines</span></h1>
+  <p>How databases find rows fast, why write-heavy stores are built inside-out, and what every index costs you on write.</p>
+  <div class="hero-pills">
+    <span>B-trees</span>
+    <span>LSM trees</span>
+    <span>Read vs write amp</span>
+    <span>Composite indexes</span>
+    <span>Covering indexes</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. B-TREES ─────────────────────────────────────────────── -->
+    <section class="section" id="btree">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🌳</div>
+        <h2>B-Tree Indexes</h2>
+        <span class="section-tag">the default, and why lookups are O(log n)</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Without an index, finding a row means scanning the whole table. A B-tree index is a balanced, sorted tree that turns that scan into a walk down a handful of levels. Each node holds many keys and points to children; you descend, narrowing the range at each step, until you land on the row. Because the tree stays balanced and wide, even a billion rows sit only three or four levels deep — that's the O(log n).</p>
+      </div>
+
+      <div class="diagram">
+<pre>  Looking up key = 42:
+
+              [ 30 | 60 ]                 root
+             /     |      \
+       [10|20]  [40|50]  [70|80]          descend into the 30–60 child
+                  │
+              → 42 found                  ~3–4 levels even for billions of rows
+
+  Keys are kept SORTED, so range scans are cheap too:
+  "everything between 40 and 55" = land on 40, walk right.</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Sorted order is the second gift: range queries (<code>BETWEEN</code>, <code>ORDER BY</code>, prefix matches) walk the leaves in order instead of jumping around. The cost lands on writes — every insert, update, and delete must keep the tree sorted and balanced, so each additional index is more work on every write (<a href="tradeoffs.html">Tradeoffs</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 2. LSM TREES ───────────────────────────────────────────── -->
+    <section class="section" id="lsm">
+      <div class="section-header">
+        <div class="section-icon icon-green">🪜</div>
+        <h2>LSM Trees</h2>
+        <span class="section-tag">why write-heavy stores are built differently</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A B-tree writes in place, which means random disk I/O on every write. An LSM tree (log-structured merge tree) flips this: buffer writes in memory, then flush them to disk in big <strong>sequential</strong> batches. Sequential I/O is far faster than random, so writes fly. This is why Cassandra, RocksDB, and LevelDB exist (<a href="sql-vs-nosql.html">wide-column stores</a>).</p>
+      </div>
+
+      <div class="diagram">
+<pre>  WRITE PATH                             READ PATH
+  write ─▶ memtable (in RAM, sorted)     check memtable ─▶ hit? done
+             │  when full, flush         miss ─▶ check SSTables newest→oldest
+             ▼  (sequential write)                │  a read may touch many files
+        SSTable  SSTable  SSTable                 ▼
+        (immutable, on disk)              Bloom filter per SSTable says
+             │                            "definitely not here" — skip the file,
+             ▼  compaction merges         avoid a useless disk read
+        fewer, bigger SSTables</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>The tax is on reads. Since data is spread across many immutable <strong>SSTables</strong>, a read may check several of them. Two things blunt that: <strong>compaction</strong> periodically merges SSTables into fewer, larger ones, and a <strong>Bloom filter</strong> per SSTable answers "is this key definitely not here?" so reads skip files that can't contain the key. Bloom filters can say "maybe present" falsely but never "absent" falsely, which is exactly what you need to avoid pointless disk reads.</p>
+      </div>
+    </section>
+
+    <!-- ── 3. B-TREE vs LSM ───────────────────────────────────────── -->
+    <section class="section" id="compare">
+      <div class="section-header">
+        <div class="section-icon icon-gold">⚖️</div>
+        <h2>B-Tree vs LSM</h2>
+        <span class="section-tag">read-optimized vs write-optimized</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The choice is a trio of amplifications — the same write shows up as extra I/O, extra reads, or extra space, and you can't minimize all three at once.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>B-tree</th><th>LSM tree</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Writes</td><td>Random I/O, in place — slower</td><td>Sequential, buffered — fast</td></tr>
+          <tr><td>Reads</td><td>One path down the tree — predictable</td><td>May check several SSTables</td></tr>
+          <tr><td>Write amplification</td><td>Update the page each write</td><td>Rewritten repeatedly by compaction</td></tr>
+          <tr><td>Read amplification</td><td>Low</td><td>Higher (mitigated by Bloom filters)</td></tr>
+          <tr><td>Space</td><td>Fragmentation, some slack</td><td>Better compression; stale copies until compaction</td></tr>
+          <tr><td>Optimized for</td><td>Read-heavy, range queries</td><td>Write-heavy ingest</td></tr>
+          <tr><td>Found in</td><td>Postgres, MySQL (InnoDB)</td><td>Cassandra, RocksDB, LevelDB</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Tie the engine to the workload out loud. "This is write-heavy ingest with mostly key lookups, so an LSM-based store fits — sequential writes, Bloom filters keeping reads cheap. If it were read-heavy with range scans and joins, I'd want a B-tree engine." That one sentence shows you know what's under the database, not just its name.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. INDEX STRATEGY ──────────────────────────────────────── -->
+    <section class="section" id="strategy">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🧭</div>
+        <h2>Index Strategy</h2>
+        <span class="section-tag">composite, covering, and when the planner ignores you</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Beyond single-column indexes, a few patterns solve most real query problems — and a few mistakes make the planner skip your index entirely.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Composite indexes</span>
+            <span class="card-badge badge-blue">column order matters</span>
+          </div>
+          <div class="card-body">
+            <p>An index on <code>(a, b, c)</code> is sorted by a, then b, then c — like a phone book by last then first name. It serves queries on <code>a</code>, <code>a+b</code>, and <code>a+b+c</code>, but <em>not</em> on <code>b</code> alone. Put the column you always filter on first, the range column last.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Covering indexes</span>
+            <span class="card-badge badge-green">index-only reads</span>
+          </div>
+          <div class="card-body">
+            <p>If the index already contains every column a query needs, the database answers from the index alone and never touches the table. A huge win for hot queries — you're reading one structure instead of two.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The planner silently ignores an index when it can't use it: a leading wildcard (<code>LIKE '%term'</code> can't seek a sorted tree), a function on the column (<code>WHERE lower(email)=…</code> unless you indexed that expression), or low selectivity (a boolean flag where a full scan is cheaper than the index round trips). "I added an index" isn't enough — it has to be one the query can actually use.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. WRITE COST ──────────────────────────────────────────── -->
+    <section class="section" id="write-cost">
+      <div class="section-header">
+        <div class="section-icon icon-red">✍️</div>
+        <h2>The Write Cost of Indexes</h2>
+        <span class="section-tag">every index is a second copy to maintain</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>An index is not free storage that only helps. It's a separate sorted structure the database must update on every write to the indexed column. Five indexes on a table means one <code>INSERT</code> becomes six writes: the row, plus each index. Indexes speed reads and slow writes, always.</p>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>"Index everything" is a write-heavy anti-pattern. On an ingest-heavy table, each extra index drags throughput down measurably. Index the columns your real queries filter and sort on, drop the ones nothing uses, and remember the read/write trade is the same one running through the whole system — you're moving work from read time to write time (<a href="tradeoffs.html">Tradeoffs</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">engines and index types on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>B-tree</th><th>LSM tree</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Best at</td><td>Reads, range scans</td><td>Write-heavy ingest</td></tr>
+          <tr><td>Writes</td><td>Random, in place</td><td>Sequential, buffered</td></tr>
+          <tr><td>Read cost</td><td>Low, predictable</td><td>Multiple SSTables + Bloom filters</td></tr>
+          <tr><td>Engines</td><td>Postgres, InnoDB</td><td>Cassandra, RocksDB</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Index type</th><th>Speeds up</th><th>Costs</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Single-column</td><td>Lookups and sorts on one field</td><td>Write overhead per index</td></tr>
+          <tr><td>Composite (a,b,c)</td><td>Queries on left-prefix of the columns</td><td>Useless for non-prefix columns</td></tr>
+          <tr><td>Covering</td><td>Index-only reads, no table hit</td><td>Larger index, more write cost</td></tr>
+          <tr><td>Partial</td><td>Queries over a subset of rows</td><td>Only helps matching predicates</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> B-tree for read-heavy and ranges; LSM for write-heavy ingest, with Bloom filters and compaction paying down the read tax. Composite index order follows the query's left-to-right filters; covering indexes dodge the table entirely. Every index is a second copy maintained on every write — index what queries use, not everything.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

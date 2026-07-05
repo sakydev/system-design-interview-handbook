@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sharding &amp; Partitioning | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Sharding &amp; <span>Partitioning</span></h1>
+  <p>Splitting data across nodes when one isn't enough. Choosing the shard key, keeping load even, and generating IDs that don't collide.</p>
+  <div class="hero-pills">
+    <span>Shard key</span>
+    <span>Hash vs range</span>
+    <span>Consistent hashing</span>
+    <span>Hot spots</span>
+    <span>Unique IDs</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. VERTICAL vs HORIZONTAL ──────────────────────────────── -->
+    <section class="section" id="v-vs-h">
+      <div class="section-header">
+        <div class="section-icon icon-blue">✂️</div>
+        <h2>Vertical vs Horizontal Partitioning</h2>
+        <span class="section-tag">split by column, or split by row</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p><strong>Vertical partitioning</strong> splits by column or table — put rarely-read columns or whole tables on a different store. <strong>Horizontal partitioning</strong> splits by row — the same table's rows spread across nodes by some key. <strong>Sharding</strong> is horizontal partitioning across separate machines, and it's the one that lets you grow past a single node's storage and write capacity.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  VERTICAL (by column/table)            HORIZONTAL / SHARDING (by row)
+  ┌─────────────────────┐               ┌──────────┐ ┌──────────┐ ┌──────────┐
+  │ id │ name │ big_blob │              │ shard A  │ │ shard B  │ │ shard C  │
+  ├────┼──────┼──────────┤              │ users    │ │ users    │ │ users    │
+  │ hot cols │ cold cols │  →           │ 0–333    │ │ 334–666  │ │ 667–999  │
+  │ on DB-1  │ on DB-2   │              └──────────┘ └──────────┘ └──────────┘
+  └─────────────────────┘               each node holds a SUBSET of the rows,
+   relieves one table's width           on its own machine</pre>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Sharding is a last resort, not a first move. It's the final step in the scaling sequence because it complicates everything above it — queries, transactions, joins. Exhaust vertical scaling, read replicas, and caching first, then shard when a single node genuinely can't hold the data or take the writes (<a href="scaling-patterns.html">Scaling Patterns</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 2. SHARD KEY ───────────────────────────────────────────── -->
+    <section class="section" id="shard-key">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🔑</div>
+        <h2>Choosing a Shard Key</h2>
+        <span class="section-tag">the single most important decision</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The shard key decides which node each row lives on, and it's the choice you can't easily undo. A good key does two things at once: it <strong>distributes evenly</strong> so no node is overloaded, and it <strong>aligns with the dominant query</strong> so most reads hit a single shard.</p>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Get it wrong and you pay the <strong>cross-shard query</strong> tax: a query that can't be answered from one shard has to fan out to all of them, wait for the slowest, and merge — turning one lookup into N. Shard a chat app by message ID and "give me this conversation" scatters across every node; shard by conversation ID and it's one node.</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>There's rarely a shard key that's perfect for every query — optimizing for one access pattern usually taxes another. Pick the key for your <em>dominant</em> pattern and accept that secondary queries fan out or need a separate index. Naming that tradeoff, rather than pretending one key serves all, is the senior answer (<a href="tradeoffs.html">Tradeoffs</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 3. HASH vs RANGE ───────────────────────────────────────── -->
+    <section class="section" id="hash-range">
+      <div class="section-header">
+        <div class="section-icon icon-green">#️⃣</div>
+        <h2>Hash vs Range Sharding</h2>
+        <span class="section-tag">even spread, or range queries — pick one</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Two ways to map a key to a shard, and they trade the exact same thing against each other.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Hash sharding</span>
+            <span class="card-badge badge-green">even, but scattered</span>
+          </div>
+          <div class="card-body">
+            <p>Hash the key and assign by the result. Spreads load beautifully — even sequential keys land on random shards. The cost: range queries are dead. "All records from last week" is scattered across every shard because adjacent keys hash apart.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Range sharding</span>
+            <span class="card-badge badge-red">local, but lumpy</span>
+          </div>
+          <div class="card-body">
+            <p>Assign contiguous key ranges to shards. Range scans and "give me a window" queries stay on one or two shards. The cost: hot spots on sequential keys — timestamps or auto-increment IDs pile every new write onto the newest shard.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>The tell: does the workload need range queries? Time-series and "recent items" want range sharding and accept the hot-newest-shard problem. Key-value lookups with no range needs want hash sharding for the even spread. Say which one the question demands and why.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. CONSISTENT HASHING ──────────────────────────────────── -->
+    <section class="section" id="consistent-hashing">
+      <div class="section-header">
+        <div class="section-icon icon-purple">🔁</div>
+        <h2>Consistent Hashing</h2>
+        <span class="section-tag">adding a node without reshuffling everything</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Naive hashing — <code>shard = hash(key) % N</code> — has a fatal flaw: change N (add or lose a node) and the modulo shifts for almost every key, so <em>nearly all</em> the data has to move. On a live cluster that's catastrophic. Consistent hashing fixes it so a membership change moves only about 1/N of the keys.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  Place nodes AND keys on a ring (hash space wrapped into a circle).
+  Each key belongs to the first node CLOCKWISE from it.
+
+              [Node A]
+           k1 ·      · k2
+        ·                 ·
+   [Node C]                [Node B]
+        ·                 ·
+           k4 ·      · k3
+              (ring)
+
+  Add Node D between B and C:
+     only the keys that fall in the B→D arc move (from C to D).
+     Everything else stays put.  →  ~1/N of keys relocate, not all of them.
+
+  Problem: with few nodes the ring is lumpy — some own huge arcs.
+  Fix: VIRTUAL NODES. Each physical node gets many points on the ring,
+  so load evens out and a lost node's share spreads across all the others.</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p><strong>Virtual nodes</strong> are the practical piece: giving each physical machine many points on the ring smooths the distribution and means when a node dies, its load spreads across all remaining nodes rather than dumping onto its single clockwise neighbor. This is how Cassandra, DynamoDB, and consistent-hash load balancers keep rebalancing cheap (<a href="service-discovery.html">Discovery</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 5. HOT SPOTS & REBALANCING ─────────────────────────────── -->
+    <section class="section" id="hotspots">
+      <div class="section-header">
+        <div class="section-icon icon-red">🔥</div>
+        <h2>Hot Spots &amp; Rebalancing</h2>
+        <span class="section-tag">when one shard gets all the traffic</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Even spread of <em>keys</em> doesn't guarantee even spread of <em>traffic</em>. A celebrity's user ID, a viral post, a single hot product — one key can draw more load than a whole shard can serve. Even distribution assumed uniform access; reality is power-law.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Problem</th><th>Mitigation</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Celebrity / hot key</td><td>Cache it in front so most reads never reach the shard (<a href="caching.html">Caching</a>)</td></tr>
+          <tr><td>Hot key still too heavy</td><td>Key salting — split it into <code>key#1…key#n</code> across shards, merge on read</td></tr>
+          <tr><td>Whole shard overloaded</td><td>Split the hot shard, or give the known-hot key dedicated capacity</td></tr>
+          <tr><td>Uneven growth over time</td><td>Rebalance: move partitions to new nodes without downtime</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card-body" style="padding-top:0">
+        <p>For rebalancing, a fixed number of partitions (many more than nodes) is easier to manage than resharding by hashing: to add a node, you move whole partitions to it, never rehashing individual keys. The data moves in the background while both copies serve, then traffic cuts over — no downtime.</p>
+      </div>
+    </section>
+
+    <!-- ── 6. UNIQUE IDS ──────────────────────────────────────────── -->
+    <section class="section" id="ids">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🆔</div>
+        <h2>Unique ID Generation</h2>
+        <span class="section-tag">auto-increment breaks under sharding</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A single-node auto-increment counter can't span shards — you'd need every shard to coordinate on the next number, which is exactly the bottleneck sharding was meant to remove. So distributed systems generate IDs differently, and the schemes trade sortability, coordination, and size.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Scheme</th><th>Sortable?</th><th>Coordination?</th><th>Gotcha</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Auto-increment</td><td>Yes</td><td>Single node</td><td>Doesn't scale across shards</td></tr>
+          <tr><td>UUID v4</td><td>No</td><td>None</td><td>Random — kills B-tree insert locality</td></tr>
+          <tr><td>UUID v7</td><td>Yes (time-prefixed)</td><td>None</td><td>Fixes v4's locality problem</td></tr>
+          <tr><td>Snowflake</td><td>Yes</td><td>Machine ID only</td><td>Needs clock sync; 64-bit</td></tr>
+          <tr><td>Ticket server</td><td>Yes</td><td>Central service</td><td>That service is a bottleneck / SPOF</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div><strong>Snowflake</strong> is the interview favorite: <code>timestamp | machine ID | per-machine sequence</code> packed into 64 bits. Time-sortable, generated independently on each node with no central coordination, and no collisions as long as machine IDs are unique. When a question needs decentralized, roughly-ordered IDs — the URL Shortener is the classic — Snowflake or UUID v7 is the answer (<a href="url-shortener.html">URL Shortener</a>).</div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>UUID v4's randomness isn't just a size cost — random keys scatter B-tree inserts across the whole index, destroying the sequential-insert locality databases love and hammering write performance (<a href="indexing.html">Indexing</a>). If you need a UUID, reach for v7, whose time prefix keeps inserts local.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">sharding and IDs on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th></th><th>Hash sharding</th><th>Range sharding</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Distribution</td><td>Even</td><td>Can be lumpy</td></tr>
+          <tr><td>Range queries</td><td>No — scattered</td><td>Yes — local</td></tr>
+          <tr><td>Hot-spot risk</td><td>Low</td><td>High on sequential keys</td></tr>
+          <tr><td>Best for</td><td>Key-value lookups</td><td>Time series, ranges</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>ID scheme</th><th>Sortable?</th><th>Coordination?</th><th>Note</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>UUID v4</td><td>No</td><td>None</td><td>Kills insert locality</td></tr>
+          <tr><td>UUID v7</td><td>Yes</td><td>None</td><td>Time-prefixed, the safe default</td></tr>
+          <tr><td>Snowflake</td><td>Yes</td><td>Machine ID</td><td>Decentralized, needs clock sync</td></tr>
+          <tr><td>Ticket server</td><td>Yes</td><td>Central</td><td>Simple but a bottleneck</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Shard last, after replicas and caching. The shard key is the load-bearing choice: even spread plus alignment with the dominant query, and cross-shard queries are the tax for missing. Hash for even spread, range for range queries. Consistent hashing with virtual nodes keeps rebalancing to ~1/N. Auto-increment dies under sharding — reach for Snowflake or UUID v7.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

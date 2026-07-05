@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL vs NoSQL | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>SQL vs <span>NoSQL</span></h1>
+  <p>The real tradeoffs behind the choice, not the mythology. What relational actually buys, what each NoSQL family gives up, and how to decide.</p>
+  <div class="hero-pills">
+    <span>Relational</span>
+    <span>Key-value</span>
+    <span>Document</span>
+    <span>Wide-column</span>
+    <span>NewSQL</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHAT RELATIONAL BUYS ────────────────────────────────── -->
+    <section class="section" id="relational">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🗄</div>
+        <h2>What Relational Actually Buys</h2>
+        <span class="section-tag">and why "SQL doesn't scale" is mostly a myth</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>A relational database gives you four things that are genuinely hard to rebuild elsewhere: a <strong>schema</strong> the database enforces so bad data can't land, <strong>joins</strong> so you can combine data without duplicating it, <strong>transactions</strong> so multi-row changes are all-or-nothing, and a <strong>mature query planner</strong> that turns declarative SQL into an efficient plan.</p>
+        <p>The reflexive "SQL doesn't scale" is mostly wrong. A single well-tuned Postgres or MySQL node handles tens of thousands of writes per second and terabytes of data. Read replicas scale reads further. You reach the wall only at genuinely large write volume — and most systems in an interview never get there (<a href="estimation.html">Estimation</a>).</p>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The honest limit is <em>write</em> scaling. Relational databases are hard to shard because joins and transactions across shards are expensive or impossible. So the real question is rarely "SQL or NoSQL for size" — it's "does my access pattern need joins and multi-row transactions, or can I trade them away for easy horizontal writes?"</div>
+      </div>
+    </section>
+
+    <!-- ── 2. THE NOSQL FAMILIES ──────────────────────────────────── -->
+    <section class="section" id="families">
+      <div class="section-header">
+        <div class="section-icon icon-green">🧬</div>
+        <h2>The NoSQL Families</h2>
+        <span class="section-tag">four models, each optimizing one access pattern</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>"NoSQL" is not one thing. It's four distinct data models, each purpose-built for an access pattern and each giving something up to get there.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Key-value</span>
+            <span class="card-badge badge-blue">Redis, DynamoDB</span>
+          </div>
+          <div class="card-body">
+            <p>A giant hash map: get and put by key, nothing else. Fastest possible lookups, trivial to shard by key. Gives up: querying by anything but the key. Great for caches, sessions, and simple lookups.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Document</span>
+            <span class="card-badge badge-green">MongoDB</span>
+          </div>
+          <div class="card-body">
+            <p>Stores JSON-like documents, queryable by fields inside them. Flexible schema, whole entities in one record — no joins to assemble an object. Gives up: cross-document joins and multi-document transactions (mostly). Good for content and catalogs.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Wide-column</span>
+            <span class="card-badge badge-gold">Cassandra</span>
+          </div>
+          <div class="card-body">
+            <p>Rows keyed by a partition key, with flexible columns per row. Built for massive write throughput and linear horizontal scaling. Gives up: ad-hoc queries — you model tables around exact query shapes. Good for time series, event logs, huge write loads.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Graph</span>
+            <span class="card-badge badge-purple">Neo4j, Neptune</span>
+          </div>
+          <div class="card-body">
+            <p>Nodes and edges as first-class citizens, tuned for traversing relationships. Friends-of-friends in one hop instead of a pile of joins. Gives up: general-purpose scale and simplicity. Overkill unless traversal <em>is</em> the workload (<a href="specialized-stores.html">Data Stores</a>).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. DECISION CRITERIA ───────────────────────────────────── -->
+    <section class="section" id="criteria">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🎯</div>
+        <h2>The Actual Decision Criteria</h2>
+        <span class="section-tag">four questions that settle it</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Ignore the brand names and ask about the workload. Four questions do most of the work.</p>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Question</th><th>Leans SQL</th><th>Leans NoSQL</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Are access patterns known up front?</td><td>No — ad-hoc queries, reporting</td><td>Yes — a few fixed, high-volume patterns</td></tr>
+          <tr><td>Need multi-row / multi-entity transactions?</td><td>Yes — money, orders, inventory</td><td>No — independent records</td></tr>
+          <tr><td>Write volume beyond one node?</td><td>Below the wall</td><td>Massive, must shard writes</td></tr>
+          <tr><td>Is the schema stable or fluid?</td><td>Stable, benefits from enforcement</td><td>Fluid, varies per record</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Schema flexibility cuts both ways. "No schema" feels freeing early, then becomes the application quietly enforcing structure the database won't — and every bug that ships bad data lands in the store forever. Treat flexibility as a real benefit only when records genuinely differ, not as an excuse to skip modeling (<a href="tradeoffs.html">Tradeoffs</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. MODELING ────────────────────────────────────────────── -->
+    <section class="section" id="modeling">
+      <div class="section-header">
+        <div class="section-icon icon-purple">✏️</div>
+        <h2>Modeling Differences</h2>
+        <span class="section-tag">normalize-then-join vs query-first</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The two worlds model data in opposite directions. Relational design <strong>normalizes</strong>: store each fact once, join at read time. NoSQL design is <strong>query-first</strong>: you decide the queries first, then shape the data — often duplicated — so each query is a single cheap lookup.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  RELATIONAL — normalize, join on read       NoSQL — denormalize around the query
+  ┌────────┐   ┌──────────┐                  ┌──────────────────────────────┐
+  │ users  │   │  orders  │                  │  "orders by user" table       │
+  │ id name│◀──│ user_id  │  JOIN at         │  user_id → [ order, order, … ]│
+  └────────┘   │ total    │  read time       │  everything the query needs,  │
+               └──────────┘                  │  pre-joined, duplicated       │
+   one copy of each fact,                    └──────────────────────────────┘
+   assembled per query                        read = one lookup; writes must
+                                              update every copy</pre>
+      </div>
+
+      <div class="card-body" style="padding-top:0">
+        <p>Neither is "correct" — it's the read-vs-write trade again. Normalization keeps writes clean and truth in one place, paying with joins on every read. Denormalization makes reads a single lookup, paying with duplicated data and update fan-out. In NoSQL you model around access patterns because the store can't join for you, so the duplication is the design, not a smell (<a href="tradeoffs.html">Tradeoffs</a>).</p>
+      </div>
+    </section>
+
+    <!-- ── 5. THE MIDDLE GROUND ───────────────────────────────────── -->
+    <section class="section" id="middle">
+      <div class="section-header">
+        <div class="section-icon icon-red">🤝</div>
+        <h2>The Middle Ground</h2>
+        <span class="section-tag">the binary is false</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The SQL/NoSQL split is not a wall. Two developments erased most of it, and interviewers know both.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Postgres JSONB</span>
+            <span class="card-badge badge-green">document features in SQL</span>
+          </div>
+          <div class="card-body">
+            <p>Relational databases store and index schemaless JSON columns natively. You get flexible documents where you want them and joins, transactions, and constraints everywhere else — in one database. Often this alone removes the reason to add a document store.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">NewSQL</span>
+            <span class="card-badge badge-blue">Spanner, CockroachDB</span>
+          </div>
+          <div class="card-body">
+            <p>Distributed SQL: horizontal write scaling <em>with</em> real transactions and the relational model. It pays with cross-node coordination latency, but it dismantles the "SQL can't scale writes" premise. "Just use Spanner" is a real answer now.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The strong interview move is to resist the false binary. "I'd start on Postgres — it handles this scale and gives me transactions. If write volume outgrows a single node, I'd shard or move the hottest table to a wide-column store, or reach for a NewSQL engine if I need to keep transactions." That shows you know the whole spectrum, not two camps.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">decision and families on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr><th>Requirement</th><th>Leans</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Multi-row transactions (money, orders)</td><td>SQL</td></tr>
+          <tr><td>Ad-hoc queries, reporting, joins</td><td>SQL</td></tr>
+          <tr><td>Massive write throughput past one node</td><td>NoSQL (wide-column)</td></tr>
+          <tr><td>Simple key lookups, cache, sessions</td><td>NoSQL (key-value)</td></tr>
+          <tr><td>Flexible per-record shape, whole entities</td><td>NoSQL (document) or Postgres JSONB</td></tr>
+          <tr><td>Relationship traversal is the workload</td><td>Graph</td></tr>
+          <tr><td>Scale + transactions both required</td><td>NewSQL</td></tr>
+        </tbody>
+      </table>
+
+      <table class="ref-table" style="margin-top:16px">
+        <thead>
+          <tr><th>Family</th><th>Optimizes</th><th>Gives up</th><th>Tool</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Key-value</td><td>Fastest lookups by key</td><td>Querying by anything else</td><td>Redis, DynamoDB</td></tr>
+          <tr><td>Document</td><td>Whole entities, flexible schema</td><td>Joins, multi-doc transactions</td><td>MongoDB</td></tr>
+          <tr><td>Wide-column</td><td>Write throughput, scale</td><td>Ad-hoc queries</td><td>Cassandra</td></tr>
+          <tr><td>Graph</td><td>Relationship traversal</td><td>General scale, simplicity</td><td>Neo4j, Neptune</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> Relational buys schema, joins, and transactions; its real limit is write scaling, not size. NoSQL trades joins and cross-record transactions for horizontal writes and query-first modeling. Default to Postgres until a specific requirement forces something else — JSONB and NewSQL mean the binary rarely holds.</div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>
