@@ -27,15 +27,17 @@
 
     <div class="nav-group">Foundations</div>
     <ul class="pkg-list">
-      <li><a href="design-process.html" class="active"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
       <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
       <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
       <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
     </ul>
 
-    <div class="nav-group">Communication</div>
+    <div class="nav-group">Networking</div>
     <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
       <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
       <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
       <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
     </ul>
@@ -50,6 +52,12 @@
       <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
     </ul>
 
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
     <div class="nav-group">Reliability</div>
     <ul class="pkg-list">
       <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
@@ -58,33 +66,39 @@
       <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
     </ul>
 
-    <div class="nav-group">Scalability</div>
+    <div class="nav-group">Architecture</div>
     <ul class="pkg-list">
       <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
       <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
     </ul>
 
-    <div class="nav-group">Observability</div>
+    <div class="nav-group">Operations</div>
     <ul class="pkg-list">
       <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
       <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
-    </ul>
-
-    <div class="nav-group">Security &amp; Regions</div>
-    <ul class="pkg-list">
       <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
-      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
     </ul>
 
     <div class="nav-group">Case Studies</div>
     <ul class="pkg-list">
       <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
       <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
       <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
       <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
       <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
       <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
     </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
   </nav>
 
   <main class="content">

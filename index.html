@@ -15,8 +15,8 @@
   <p style="font-size:.8rem;color:var(--muted);margin-top:-8px;margin-bottom:16px">by Saqib Razzaq</p>
   <div class="hero-pills">
     <span>8 topic groups</span>
-    <span>26 concept pages</span>
-    <span>6 case studies</span>
+    <span>27 concept pages</span>
+    <span>8 case studies</span>
     <span>Open source</span>
   </div>
 </div>
@@ -24,9 +24,9 @@
 <!-- ═══════════════════════════════════════════════════════════ LAYOUT -->
 <div class="layout">
 
-  <!-- LEFT: Nav -->
+  <!-- LEFT: Nav ─ canonical block, copied verbatim into every page -->
   <nav class="pkg-nav">
-    <a href="index.html" class="home-link active">SD Handbook</a>
+    <a href="index.html" class="home-link">SD Handbook</a>
 
     <div class="nav-group">Foundations</div>
     <ul class="pkg-list">
@@ -36,9 +36,11 @@
       <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
     </ul>
 
-    <div class="nav-group">Communication</div>
+    <div class="nav-group">Networking</div>
     <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
       <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
       <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
       <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
     </ul>
@@ -53,6 +55,12 @@
       <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
     </ul>
 
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
     <div class="nav-group">Reliability</div>
     <ul class="pkg-list">
       <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
@@ -61,33 +69,39 @@
       <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
     </ul>
 
-    <div class="nav-group">Scalability</div>
+    <div class="nav-group">Architecture</div>
     <ul class="pkg-list">
       <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
       <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
     </ul>
 
-    <div class="nav-group">Observability</div>
+    <div class="nav-group">Operations</div>
     <ul class="pkg-list">
       <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
       <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
-    </ul>
-
-    <div class="nav-group">Security &amp; Regions</div>
-    <ul class="pkg-list">
       <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
-      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
     </ul>
 
     <div class="nav-group">Case Studies</div>
     <ul class="pkg-list">
       <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
       <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
       <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
       <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
       <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
       <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
     </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
   </nav>
 
   <!-- MAIN CONTENT -->
@@ -156,13 +170,26 @@
       </div>
     </div>
 
-    <!-- Communication -->
+    <!-- Networking & Communication -->
     <div class="home-section">
       <div class="home-section-header">
-        <h2>Communication</h2>
-        <span>How services find and talk to each other</span>
+        <h2>Networking &amp; Communication</h2>
+        <span>How data moves and how services find and talk to each other</span>
       </div>
       <div class="card-grid">
+
+        <a href="networking-basics.html" class="topic-card">
+          <div class="tc-icon">🌐</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">Networking Basics</span>
+            </div>
+            <p class="tc-desc">What happens between the browser and your load balancer: DNS, TCP, TLS, HTTP versions, and CDN edge delivery.</p>
+            <div class="tc-tags">
+              <span>DNS</span><span>TLS</span><span>HTTP/3</span><span>CDN</span>
+            </div>
+          </div>
+        </a>
 
         <a href="apis.html" class="topic-card">
           <div class="tc-icon">🔗</div>
@@ -170,9 +197,22 @@
             <div class="tc-header">
               <span class="tc-title">APIs &amp; Protocols</span>
             </div>
-            <p class="tc-desc">REST vs RPC vs GraphQL, and request-response vs event-driven communication styles.</p>
+            <p class="tc-desc">REST vs gRPC vs GraphQL, request-response vs event-driven, and API details like pagination and idempotency keys.</p>
             <div class="tc-tags">
               <span>REST</span><span>gRPC</span><span>GraphQL</span><span>Events</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="realtime.html" class="topic-card">
+          <div class="tc-icon">📡</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">Real-Time Delivery</span>
+            </div>
+            <p class="tc-desc">Polling, SSE and WebSockets, holding a million live connections, and delivery over flaky links.</p>
+            <div class="tc-tags">
+              <span>WebSockets</span><span>SSE</span><span>Presence</span>
             </div>
           </div>
         </a>
@@ -194,11 +234,11 @@
           <div class="tc-icon">🛰</div>
           <div class="tc-body">
             <div class="tc-header">
-              <span class="tc-title">Service Discovery</span>
+              <span class="tc-title">Load Balancing &amp; Discovery</span>
             </div>
-            <p class="tc-desc">Service discovery, API gateways, and load balancing algorithms at layer 4 and layer 7.</p>
+            <p class="tc-desc">Load balancing algorithms, L4 vs L7, health checks, service discovery, and the API gateway at the edge.</p>
             <div class="tc-tags">
-              <span>Discovery</span><span>Gateway</span><span>Load Balancing</span>
+              <span>Load Balancing</span><span>Discovery</span><span>Gateway</span>
             </div>
           </div>
         </a>
@@ -231,11 +271,11 @@
           <div class="tc-icon">🔍</div>
           <div class="tc-body">
             <div class="tc-header">
-              <span class="tc-title">Indexing</span>
+              <span class="tc-title">Indexing &amp; Storage Engines</span>
             </div>
-            <p class="tc-desc">Indexing strategy, partial and covering indexes, and how query planners use them.</p>
+            <p class="tc-desc">B-trees vs LSM trees, composite and covering indexes, and the write cost every index carries.</p>
             <div class="tc-tags">
-              <span>B-Tree</span><span>Partial</span><span>Covering</span>
+              <span>B-Tree</span><span>LSM</span><span>Covering</span>
             </div>
           </div>
         </a>
@@ -246,9 +286,9 @@
             <div class="tc-header">
               <span class="tc-title">Sharding &amp; Partitioning</span>
             </div>
-            <p class="tc-desc">Splitting data across nodes, consistent hashing, hot spots, and rebalancing strategies.</p>
+            <p class="tc-desc">Splitting data across nodes, consistent hashing, hot spots, rebalancing, and unique ID generation.</p>
             <div class="tc-tags">
-              <span>Sharding</span><span>Consistent Hashing</span><span>Hot Spots</span>
+              <span>Shard Key</span><span>Consistent Hashing</span><span>Hot Spots</span>
             </div>
           </div>
         </a>
@@ -272,9 +312,9 @@
             <div class="tc-header">
               <span class="tc-title">Specialized Stores</span>
             </div>
-            <p class="tc-desc">Time series, columnar, graph and blob storage, and the workloads that make each one the right call.</p>
+            <p class="tc-desc">Time series, columnar, graph, blob and geospatial stores, and the workloads that make each one the right call.</p>
             <div class="tc-tags">
-              <span>Time Series</span><span>Columnar</span><span>Graph</span><span>Blob</span>
+              <span>Time Series</span><span>Columnar</span><span>Blob</span><span>Geo</span>
             </div>
           </div>
         </a>
@@ -285,9 +325,46 @@
             <div class="tc-header">
               <span class="tc-title">Caching</span>
             </div>
-            <p class="tc-desc">Cache-aside, write-through and write-behind, invalidation strategies, CDNs, and the cache stampede problem.</p>
+            <p class="tc-desc">Cache-aside, write-through and write-behind, invalidation strategies, and the cache stampede problem.</p>
             <div class="tc-tags">
-              <span>Cache-Aside</span><span>Invalidation</span><span>CDN</span>
+              <span>Cache-Aside</span><span>Invalidation</span><span>Stampede</span>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- Data Processing -->
+    <div class="home-section">
+      <div class="home-section-header">
+        <h2>Data Processing</h2>
+        <span>Turning raw event streams into answers</span>
+      </div>
+      <div class="card-grid">
+
+        <a href="batch-stream-processing.html" class="topic-card">
+          <div class="tc-icon">🌊</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">Batch &amp; Stream Processing</span>
+            </div>
+            <p class="tc-desc">MapReduce and stream topologies, windowing, exactly-once, and counting at scale with sketches.</p>
+            <div class="tc-tags">
+              <span>MapReduce</span><span>Windowing</span><span>Sketches</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="search.html" class="topic-card">
+          <div class="tc-icon">🔎</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">Search</span>
+            </div>
+            <p class="tc-desc">Inverted indexes, relevance ranking with BM25, and typeahead under a 100ms budget.</p>
+            <div class="tc-tags">
+              <span>Inverted Index</span><span>BM25</span><span>Typeahead</span>
             </div>
           </div>
         </a>
@@ -335,9 +412,9 @@
             <div class="tc-header">
               <span class="tc-title">Concurrency Control</span>
             </div>
-            <p class="tc-desc">Idempotency, at-least-once vs exactly-once delivery, compare-and-swap for optimistic concurrency, and vector clocks.</p>
+            <p class="tc-desc">Idempotency, at-least-once vs exactly-once, optimistic vs pessimistic locking, distributed locks, and logical clocks.</p>
             <div class="tc-tags">
-              <span>Idempotency</span><span>CAS</span><span>Vector Clocks</span>
+              <span>Idempotency</span><span>Locking</span><span>Vector Clocks</span>
             </div>
           </div>
         </a>
@@ -348,9 +425,9 @@
             <div class="tc-header">
               <span class="tc-title">Consensus</span>
             </div>
-            <p class="tc-desc">Leader election and the basics of Paxos and Raft, the machinery behind quorum based systems.</p>
+            <p class="tc-desc">Quorums, leader election, and Raft in depth, the machinery behind everywhere "exactly one" must be true.</p>
             <div class="tc-tags">
-              <span>Leader Election</span><span>Raft</span><span>Paxos</span>
+              <span>Quorum</span><span>Raft</span><span>Leader Election</span>
             </div>
           </div>
         </a>
@@ -358,10 +435,10 @@
       </div>
     </div>
 
-    <!-- Scalability -->
+    <!-- Architecture & Scale -->
     <div class="home-section">
       <div class="home-section-header">
-        <h2>Scalability</h2>
+        <h2>Architecture &amp; Scale</h2>
         <span>Growing a system without it falling over</span>
       </div>
       <div class="card-grid">
@@ -372,9 +449,9 @@
             <div class="tc-header">
               <span class="tc-title">Microservices</span>
             </div>
-            <p class="tc-desc">Monolith vs microservices, how to decompose a system, and when splitting things up is the wrong call.</p>
+            <p class="tc-desc">Monolith vs microservices, how to draw boundaries, and when splitting things up is the wrong call.</p>
             <div class="tc-tags">
-              <span>Monolith</span><span>Decomposition</span><span>Boundaries</span>
+              <span>Monolith</span><span>Boundaries</span><span>Strangler Fig</span>
             </div>
           </div>
         </a>
@@ -385,70 +462,9 @@
             <div class="tc-header">
               <span class="tc-title">Scaling Patterns</span>
             </div>
-            <p class="tc-desc">Horizontal vs vertical scaling, statelessness, and rate limiting and throttling algorithms.</p>
+            <p class="tc-desc">Horizontal vs vertical scaling, statelessness, the scaling sequence, autoscaling, and rate limiting.</p>
             <div class="tc-tags">
               <span>Horizontal</span><span>Stateless</span><span>Rate Limiting</span>
-            </div>
-          </div>
-        </a>
-
-      </div>
-    </div>
-
-    <!-- Observability -->
-    <div class="home-section">
-      <div class="home-section-header">
-        <h2>Observability</h2>
-        <span>Knowing what your system is doing before a user tells you</span>
-      </div>
-      <div class="card-grid">
-
-        <a href="metrics-logs-traces.html" class="topic-card">
-          <div class="tc-icon">📊</div>
-          <div class="tc-body">
-            <div class="tc-header">
-              <span class="tc-title">Metrics, Logs &amp; Traces</span>
-            </div>
-            <p class="tc-desc">What each signal is actually for, plus distributed tracing with OpenTelemetry and span propagation.</p>
-            <div class="tc-tags">
-              <span>Metrics</span><span>Logs</span><span>Tracing</span>
-            </div>
-          </div>
-        </a>
-
-        <a href="slo-sla.html" class="topic-card">
-          <div class="tc-icon">🎯</div>
-          <div class="tc-body">
-            <div class="tc-header">
-              <span class="tc-title">SLI, SLO &amp; SLA</span>
-            </div>
-            <p class="tc-desc">Error budgets, the difference between all three terms, and why you alert on symptoms, not causes.</p>
-            <div class="tc-tags">
-              <span>SLI</span><span>SLO</span><span>Error Budget</span>
-            </div>
-          </div>
-        </a>
-
-      </div>
-    </div>
-
-    <!-- Security & Multi-Region -->
-    <div class="home-section">
-      <div class="home-section-header">
-        <h2>Security &amp; Multi-Region</h2>
-        <span>What breaks once you leave a single trusted data center</span>
-      </div>
-      <div class="card-grid">
-
-        <a href="security-basics.html" class="topic-card">
-          <div class="tc-icon">🔒</div>
-          <div class="tc-body">
-            <div class="tc-header">
-              <span class="tc-title">Security Basics</span>
-            </div>
-            <p class="tc-desc">Authentication vs authorization, encryption in transit and at rest, and secrets management.</p>
-            <div class="tc-tags">
-              <span>AuthN</span><span>AuthZ</span><span>Encryption</span>
             </div>
           </div>
         </a>
@@ -462,6 +478,56 @@
             <p class="tc-desc">Active-active vs active-passive deployments, disaster recovery, and data residency constraints.</p>
             <div class="tc-tags">
               <span>Active-Active</span><span>DR</span><span>Residency</span>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- Operations -->
+    <div class="home-section">
+      <div class="home-section-header">
+        <h2>Operations</h2>
+        <span>Running the system in production</span>
+      </div>
+      <div class="card-grid">
+
+        <a href="metrics-logs-traces.html" class="topic-card">
+          <div class="tc-icon">📊</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">Metrics, Logs &amp; Traces</span>
+            </div>
+            <p class="tc-desc">What each signal is actually for, the four golden signals, and distributed tracing across service boundaries.</p>
+            <div class="tc-tags">
+              <span>Metrics</span><span>Logs</span><span>Tracing</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="slo-sla.html" class="topic-card">
+          <div class="tc-icon">🎯</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">SLI, SLO &amp; SLA</span>
+            </div>
+            <p class="tc-desc">Error budgets, the difference between all three terms, the nines, and why you alert on symptoms, not causes.</p>
+            <div class="tc-tags">
+              <span>SLI</span><span>SLO</span><span>Error Budget</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="security-basics.html" class="topic-card">
+          <div class="tc-icon">🔒</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">Security Basics</span>
+            </div>
+            <p class="tc-desc">Authentication vs authorization, encryption in transit and at rest, secrets management, and the perimeter.</p>
+            <div class="tc-tags">
+              <span>AuthN</span><span>AuthZ</span><span>Encryption</span>
             </div>
           </div>
         </a>
@@ -483,9 +549,9 @@
             <div class="tc-header">
               <span class="tc-title">URL Shortener</span>
             </div>
-            <p class="tc-desc">The classic warm up: encoding schemes, redirect latency, and read heavy caching.</p>
+            <p class="tc-desc">The classic warm up: key generation, redirect latency, and read heavy caching.</p>
             <div class="tc-tags">
-              <span>Encoding</span><span>Redirects</span><span>Caching</span>
+              <span>Key Generation</span><span>Redirects</span><span>Caching</span>
             </div>
           </div>
         </a>
@@ -496,9 +562,22 @@
             <div class="tc-header">
               <span class="tc-title">Rate Limiter</span>
             </div>
-            <p class="tc-desc">Token bucket, sliding window, and distributed rate limiting across a fleet of servers.</p>
+            <p class="tc-desc">Token bucket, sliding window, and distributed counting across a fleet of gateways.</p>
             <div class="tc-tags">
               <span>Token Bucket</span><span>Sliding Window</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="typeahead.html" class="topic-card">
+          <div class="tc-icon">⌨️</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">Typeahead</span>
+            </div>
+            <p class="tc-desc">Prefix suggestions under 100ms: tries with precomputed top-k and an offline aggregation pipeline.</p>
+            <div class="tc-tags">
+              <span>Trie</span><span>Top-K</span><span>Precompute</span>
             </div>
           </div>
         </a>
@@ -525,6 +604,19 @@
             <p class="tc-desc">Push vs pull fan out, ranking, and handling celebrity accounts with millions of followers.</p>
             <div class="tc-tags">
               <span>Fan-Out</span><span>Ranking</span><span>Hot Keys</span>
+            </div>
+          </div>
+        </a>
+
+        <a href="video-streaming.html" class="topic-card">
+          <div class="tc-icon">🎬</div>
+          <div class="tc-body">
+            <div class="tc-header">
+              <span class="tc-title">Video Streaming</span>
+            </div>
+            <p class="tc-desc">Upload, transcode and adaptive playback, with the metadata/payload split that carries the design.</p>
+            <div class="tc-tags">
+              <span>Transcoding</span><span>HLS</span><span>CDN</span>
             </div>
           </div>
         </a>

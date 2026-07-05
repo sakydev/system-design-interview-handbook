@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consistency Models | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Consistency <span>Models</span></h1>
+  <p>What "consistent" actually means, what each level costs, and how to pick one from a product requirement.</p>
+  <div class="hero-pills">
+    <span>CAP</span>
+    <span>PACELC</span>
+    <span>Linearizable</span>
+    <span>Causal</span>
+    <span>ACID vs BASE</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. CAP ─────────────────────────────────────────────────── -->
+    <section class="section" id="cap">
+      <div class="section-header">
+        <div class="section-icon icon-blue">⚖️</div>
+        <h2>The CAP Theorem</h2>
+        <span class="section-tag">C vs A, only during a partition</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>CAP names three properties a distributed store might want: <strong>Consistency</strong> (every read sees the most recent write, as if there were one copy), <strong>Availability</strong> (every request gets a non-error response), and <strong>Partition tolerance</strong> (the system keeps working when the network drops messages between nodes).</p>
+        <p>The popular framing, "pick two of three," is wrong. Partitions are not a choice you make; networks fail whether you like it or not. So P is not optional for any real distributed system. The theorem is really about one moment: <strong>when a partition happens, do you sacrifice consistency or availability?</strong></p>
+      </div>
+
+      <div class="diagram">
+<pre>   Client writes x=2                                   Client reads x
+          │                                                   │
+          ▼                                                   ▼
+   ┌───────────────┐        ╳  partition  ╳         ┌───────────────┐
+   │    Node A     │ ┈┈┈┈┈┈┈┈┈┈┈ X ┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈ │    Node B     │
+   │  accepts x=2  │          (cannot sync)          │  still x = 1  │
+   └───────────────┘                                 └───────────────┘
+
+   CP choice → Node B refuses the read (or A refuses the write): no stale data, but unavailable.
+   AP choice → Node B returns x=1: available, but the read is stale until the partition heals.</pre>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">CP — consistency over availability</span>
+            <span class="card-badge badge-blue">Refuse rather than lie</span>
+          </div>
+          <div class="card-body">
+            <p>During a partition, reject requests the system can't serve correctly. The minority side stops taking writes; some clients get errors.</p>
+            <p><strong>Fits:</strong> anything where a wrong answer is worse than no answer — balances, inventory, locks, config, leader election.</p>
+            <p><strong>Examples:</strong> ZooKeeper, etcd, HBase, Spanner.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">AP — availability over consistency</span>
+            <span class="card-badge badge-red">Answer, reconcile later</span>
+          </div>
+          <div class="card-body">
+            <p>During a partition, keep serving from whatever node you can reach. Reads may be stale, writes may conflict, and the system reconciles once the partition heals.</p>
+            <p><strong>Fits:</strong> anything where a slightly stale answer is fine — feeds, likes, product catalogs, view counts.</p>
+            <p><strong>Examples:</strong> Cassandra, DynamoDB, Riak.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Two traps. First, "CA" systems don't exist in the distributed sense — drop P and you just have a single node. Second, CAP's C means linearizability, not the C in ACID; they're unrelated letters that happen to share a word.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. PACELC ──────────────────────────────────────────────── -->
+    <section class="section" id="pacelc">
+      <div class="section-header">
+        <div class="section-icon icon-green">🔀</div>
+        <h2>PACELC: The Part CAP Leaves Out</h2>
+        <span class="section-tag">the trade exists even without partitions</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>CAP only speaks about the partition case, which is rare. PACELC finishes the sentence: <strong>if</strong> there is a <strong>P</strong>artition, choose <strong>A</strong>vailability or <strong>C</strong>onsistency; <strong>E</strong>lse, in normal operation, choose <strong>L</strong>atency or <strong>C</strong>onsistency.</p>
+        <p>That "else" is the honest part. Any system that replicates data faces a choice on every write: wait for replicas to acknowledge before returning (consistent, slower) or return as soon as one node has it (fast, possibly stale). You pay this tax all day, not just during the once-a-quarter partition.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Reading the four-letter labels</span>
+          <span class="card-badge badge-green">Classification</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>System</th><th>PACELC</th><th>Meaning</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Cassandra, Dynamo</td><td>PA / EL</td><td>Stay available in a partition; favor latency otherwise. Tunable, but this is the default posture.</td></tr>
+            <tr><td>Spanner</td><td>PC / EC</td><td>Consistency always, even at the cost of latency. Pays with synchronized-clock waits.</td></tr>
+            <tr><td>Single-node RDBMS</td><td>— / EC</td><td>No partition story; strongly consistent because there's one copy.</td></tr>
+            <tr><td>MongoDB (default)</td><td>PA / EC</td><td>Available under partition; consistent reads from the primary in normal operation.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>PACELC is the more useful lens in an interview because it forces you to talk about the common case. Saying "in normal operation I'll trade a little latency for read-your-writes here, but go EL for the like counter" shows you understand the cost is continuous, not a partition-only event (<a href="tradeoffs.html">Tradeoffs</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 3. SPECTRUM ────────────────────────────────────────────── -->
+    <section class="section" id="spectrum">
+      <div class="section-header">
+        <div class="section-icon icon-purple">📶</div>
+        <h2>The Consistency Spectrum</h2>
+        <span class="section-tag">linearizable → eventual</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>"Consistent" is not one thing. It's a ladder, and each rung down buys lower latency and higher availability by allowing one more kind of anomaly. Know the rungs and one concrete anomaly each, because that anomaly is how you explain the level to an interviewer.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  STRONGER ◀───────────────────────────────────────────────────────▶ WEAKER
+  more coordination · higher latency          less coordination · lower latency
+
+   Linearizable  ──▶  Sequential  ──▶   Causal    ──▶   Eventual
+   single-copy        global order       cause-before      replicas
+   illusion,          but no real-time    -effect only,     converge if
+   no stale reads     ordering            concurrent free   writes stop</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Each rung and the anomaly it does or doesn't allow</span>
+          <span class="card-badge badge-purple">One example each</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Level</th><th>Guarantee</th><th>Anomaly at this level</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Linearizable</td><td>Every read returns the latest write; the system acts like one copy on a single timeline.</td><td>None. This is the gold standard, and the most expensive.</td></tr>
+            <tr><td>Sequential</td><td>All nodes agree on one order of operations, respecting each client's own order.</td><td>Two users may disagree on real-time timing: your write "happened first" on the clock but is ordered after mine.</td></tr>
+            <tr><td>Causal</td><td>Operations that are causally related are seen in order everywhere; unrelated ones may differ.</td><td>Concurrent writes can appear in different orders on different replicas — but you never see a reply before the comment it answers.</td></tr>
+            <tr><td>Eventual</td><td>If writes stop, all replicas converge to the same value. That's the only promise.</td><td>Read-your-writes violation: you post a comment, refresh, and it's gone because you hit a lagging replica.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The gap between linearizable and everything else is the one that matters most in practice. Linearizability needs coordination on the write path — a consensus round or a single leader (<a href="consensus.html">Consensus</a>) — which is exactly the latency PACELC warned about. Everything below it trades that coordination away.</div>
+      </div>
+    </section>
+
+    <!-- ── 4. SESSION GUARANTEES ──────────────────────────────────── -->
+    <section class="section" id="sessions">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🎫</div>
+        <h2>Session Guarantees</h2>
+        <span class="section-tag">cheap consistency where users notice</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Full linearizability is often overkill. What users actually notice is inconsistency <em>within their own session</em>: they post something and it vanishes, or a page refresh shows older data than the last one. Session guarantees fix exactly those, and they're cheap because they only constrain one client's view, not the whole cluster.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">The four that carry most products</span>
+          <span class="card-badge badge-gold">Per-session</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Guarantee</th><th>Promise</th><th>Bug it prevents</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Read-your-writes</td><td>You always see your own updates.</td><td>Comment disappears right after you post it.</td></tr>
+            <tr><td>Monotonic reads</td><td>Once you've seen a value, you won't later see an older one.</td><td>Timeline jumps backward on refresh.</td></tr>
+            <tr><td>Monotonic writes</td><td>Your writes apply in the order you issued them.</td><td>Second edit lost behind the first.</td></tr>
+            <tr><td>Writes-follow-reads</td><td>A write you make is ordered after the read it was based on.</td><td>Reply appears before the post it answers.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>These are usually implemented by pinning a session to one replica (sticky routing) or by tracking the version a client has seen and refusing to serve older ones. On an eventually-consistent store, layering read-your-writes on top is often all a social product needs. Reach for that before you reach for global strong consistency (<a href="replication.html">Replication</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 5. ACID vs BASE ────────────────────────────────────────── -->
+    <section class="section" id="acid-base">
+      <div class="section-header">
+        <div class="section-icon icon-red">🧪</div>
+        <h2>ACID vs BASE</h2>
+        <span class="section-tag">two philosophies, one spectrum</span>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">ACID</span>
+            <span class="card-badge badge-blue">Transactional</span>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><strong>Atomicity</strong> — all of a transaction happens, or none of it.</li>
+              <li><strong>Consistency</strong> — a transaction moves the DB from one valid state to another, preserving invariants.</li>
+              <li><strong>Isolation</strong> — concurrent transactions don't see each other's partial work.</li>
+              <li><strong>Durability</strong> — once committed, it survives a crash.</li>
+            </ul>
+            <p>Cheap and natural on a single node. The classic home of relational databases.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">BASE</span>
+            <span class="card-badge badge-red">Available</span>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><strong>Basically Available</strong> — the system answers, even if degraded.</li>
+              <li><strong>Soft state</strong> — data may change without input as replicas sync.</li>
+              <li><strong>Eventual consistency</strong> — replicas converge over time.</li>
+            </ul>
+            <p>The design philosophy of AP systems: give up strict guarantees to stay up and stay fast at scale.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>ACID within one node is easy; stretching it across nodes is where the cost hides. Multi-record, multi-service atomicity needs two-phase commit or sagas, and that machinery is a whole topic of its own (<a href="distributed-transactions.html">Distributed Transactions</a>). And again: ACID's "C" (invariants) is not CAP's "C" (linearizability).</div>
+      </div>
+    </section>
+
+    <!-- ── 6. CHOOSING ────────────────────────────────────────────── -->
+    <section class="section" id="choosing">
+      <div class="section-header">
+        <div class="section-icon icon-gold">🎯</div>
+        <h2>Choosing in an Interview</h2>
+        <span class="section-tag">map the requirement to the model</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The move is not to pick one consistency level for the whole system. It's to look at each piece of data and ask what a wrong or stale answer costs. Most real designs mix levels: strong where money and identity live, eventual for the derived views that dominate traffic.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Product requirement → model</span>
+          <span class="card-badge badge-gold">Mapping</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Requirement</th><th>Model</th><th>Why</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Payments, balances, inventory, seats</td><td>Strong / linearizable</td><td>Double-spend or overselling is unacceptable; correctness beats latency.</td></tr>
+            <tr><td>Usernames, locks, leader election</td><td>Strong / linearizable</td><td>"Exactly one" must be true across the cluster.</td></tr>
+            <tr><td>Comment threads, collaborative editing</td><td>Causal</td><td>Cause-and-effect order must hold; concurrent edits can be reconciled.</td></tr>
+            <tr><td>Your own posts and profile edits</td><td>Session (read-your-writes)</td><td>Users must see their own actions; others can lag briefly.</td></tr>
+            <tr><td>Feeds, likes, view counts, catalogs</td><td>Eventual</td><td>Read-heavy, tolerant of staleness; availability and latency win.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>When the interviewer asks "how consistent does this need to be?", the strong answer is never "strongly consistent everywhere." It's "the order-of-record is strongly consistent; the timeline and counters are eventual with read-your-writes for the author." Naming the split is the senior signal (<a href="design-process.html">Design Process</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">models on one card</span>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Guarantee</th>
+            <th>Example system</th>
+            <th>Anomaly avoided</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Linearizable</td><td>Reads see the latest write, single-copy illusion</td><td>etcd, ZooKeeper, Spanner</td><td>Stale reads, lost order</td></tr>
+          <tr><td>Sequential</td><td>One global order respecting per-client order</td><td>Distributed logs</td><td>Reordered per-client ops</td></tr>
+          <tr><td>Causal</td><td>Cause precedes effect everywhere</td><td>MongoDB causal sessions</td><td>Reply before its comment</td></tr>
+          <tr><td>Read-your-writes</td><td>You see your own updates</td><td>Session layer on eventual store</td><td>Your write vanishing</td></tr>
+          <tr><td>Eventual</td><td>Replicas converge if writes stop</td><td>Cassandra, DynamoDB, DNS</td><td>Only guarantees convergence</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:20px">
+        <span class="callout-icon">ℹ️</span>
+        <div><strong>The one-liners to keep ready.</strong> CAP: partitions force a choice between consistency and availability. PACELC: even without partitions, replication trades latency against consistency. The move: match each piece of data to the weakest model that still hides the anomaly users would notice.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="toc-nav">
+    <div class="toc-title">On this page</div>
+    <ul class="toc">
+      <li><a href="#cap">1: The CAP Theorem</a></li>
+      <li><a href="#pacelc">2: PACELC</a></li>
+      <li><a href="#spectrum">3: The Consistency Spectrum</a></li>
+      <li><a href="#sessions">4: Session Guarantees</a></li>
+      <li><a href="#acid-base">5: ACID vs BASE</a></li>
+      <li><a href="#choosing">6: Choosing in an Interview</a></li>
+      <li><a href="#reference">99: Quick Reference</a></li>
+    </ul>
+  </nav>
+
+</div>
+
+</body>
+</html>

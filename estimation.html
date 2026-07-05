@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estimation | System Design Interview Handbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="hero">
+  <h1>Back-of-Envelope <span>Estimation</span></h1>
+  <p>Turn a user count into QPS, storage and bandwidth in five minutes, with numbers you memorized once.</p>
+  <div class="hero-pills">
+    <span>Powers of two</span>
+    <span>Latency numbers</span>
+    <span>QPS</span>
+    <span>Storage</span>
+    <span>Bandwidth</span>
+  </div>
+</div>
+
+<div class="layout has-toc">
+
+  <nav class="pkg-nav">
+    <a href="index.html" class="home-link">SD Handbook</a>
+
+    <div class="nav-group">Foundations</div>
+    <ul class="pkg-list">
+      <li><a href="design-process.html"><span class="pkg-icon">🧭</span>Design Process</a></li>
+      <li><a href="estimation.html"><span class="pkg-icon">🧮</span>Estimation</a></li>
+      <li><a href="consistency-models.html"><span class="pkg-icon">⚖️</span>Consistency</a></li>
+      <li><a href="tradeoffs.html"><span class="pkg-icon">🎛</span>Tradeoffs</a></li>
+    </ul>
+
+    <div class="nav-group">Networking</div>
+    <ul class="pkg-list">
+      <li><a href="networking-basics.html"><span class="pkg-icon">🌐</span>Networking</a></li>
+      <li><a href="apis.html"><span class="pkg-icon">🔗</span>APIs</a></li>
+      <li><a href="realtime.html"><span class="pkg-icon">📡</span>Real-Time</a></li>
+      <li><a href="messaging.html"><span class="pkg-icon">📨</span>Messaging</a></li>
+      <li><a href="service-discovery.html"><span class="pkg-icon">🛰</span>Discovery</a></li>
+    </ul>
+
+    <div class="nav-group">Data &amp; Storage</div>
+    <ul class="pkg-list">
+      <li><a href="sql-vs-nosql.html"><span class="pkg-icon">🗄</span>SQL vs NoSQL</a></li>
+      <li><a href="indexing.html"><span class="pkg-icon">🔍</span>Indexing</a></li>
+      <li><a href="sharding-partitioning.html"><span class="pkg-icon">🧩</span>Sharding</a></li>
+      <li><a href="replication.html"><span class="pkg-icon">🪞</span>Replication</a></li>
+      <li><a href="specialized-stores.html"><span class="pkg-icon">🗃</span>Data Stores</a></li>
+      <li><a href="caching.html"><span class="pkg-icon">⚡</span>Caching</a></li>
+    </ul>
+
+    <div class="nav-group">Data Processing</div>
+    <ul class="pkg-list">
+      <li><a href="batch-stream-processing.html"><span class="pkg-icon">🌊</span>Batch &amp; Stream</a></li>
+      <li><a href="search.html"><span class="pkg-icon">🔎</span>Search</a></li>
+    </ul>
+
+    <div class="nav-group">Reliability</div>
+    <ul class="pkg-list">
+      <li><a href="resilience-patterns.html"><span class="pkg-icon">🛡</span>Resilience</a></li>
+      <li><a href="distributed-transactions.html"><span class="pkg-icon">🔄</span>Transactions</a></li>
+      <li><a href="concurrency-control.html"><span class="pkg-icon">🔐</span>Concurrency</a></li>
+      <li><a href="consensus.html"><span class="pkg-icon">🗳</span>Consensus</a></li>
+    </ul>
+
+    <div class="nav-group">Architecture</div>
+    <ul class="pkg-list">
+      <li><a href="microservices.html"><span class="pkg-icon">🧱</span>Microservices</a></li>
+      <li><a href="scaling-patterns.html"><span class="pkg-icon">📈</span>Scaling</a></li>
+      <li><a href="multi-region.html"><span class="pkg-icon">🌍</span>Multi-Region</a></li>
+    </ul>
+
+    <div class="nav-group">Operations</div>
+    <ul class="pkg-list">
+      <li><a href="metrics-logs-traces.html"><span class="pkg-icon">📊</span>Telemetry</a></li>
+      <li><a href="slo-sla.html"><span class="pkg-icon">🎯</span>SLOs</a></li>
+      <li><a href="security-basics.html"><span class="pkg-icon">🔒</span>Security</a></li>
+    </ul>
+
+    <div class="nav-group">Case Studies</div>
+    <ul class="pkg-list">
+      <li><a href="url-shortener.html"><span class="pkg-icon">🔗</span>URL Shortener</a></li>
+      <li><a href="rate-limiter.html"><span class="pkg-icon">🚦</span>Rate Limiter</a></li>
+      <li><a href="typeahead.html"><span class="pkg-icon">⌨️</span>Typeahead</a></li>
+      <li><a href="chat-system.html"><span class="pkg-icon">💬</span>Chat System</a></li>
+      <li><a href="news-feed.html"><span class="pkg-icon">📰</span>News Feed</a></li>
+      <li><a href="video-streaming.html"><span class="pkg-icon">🎬</span>Video Streaming</a></li>
+      <li><a href="ride-sharing.html"><span class="pkg-icon">🚕</span>Ride Sharing</a></li>
+      <li><a href="job-scheduler.html"><span class="pkg-icon">⏰</span>Job Scheduler</a></li>
+    </ul>
+
+    <script>
+    (function () {
+      var file = location.pathname.split('/').pop() || 'index.html';
+      var link = document.querySelector('.pkg-nav a[href="' + file + '"]');
+      if (link) link.classList.add('active');
+    })();
+    </script>
+  </nav>
+
+  <main class="content">
+
+    <!-- ── 1. WHY ─────────────────────────────────────────────────── -->
+    <section class="section" id="why">
+      <div class="section-header">
+        <div class="section-icon icon-blue">🧮</div>
+        <h2>Why Estimate at All</h2>
+        <span class="section-tag">the 5-minute sanity check</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Estimation is how you find the bottleneck before you draw around it. A number tells you whether the data fits in memory or needs a hundred machines, whether reads or writes dominate, whether the payload is the story or the request count is. Skip it and you're designing blind, and the interviewer knows it.</p>
+        <p>The goal is not precision. It's the right order of magnitude, fast, so the rest of your design rests on something real. "It should scale" is not an answer. "That's 4 GB/s of egress, so this is a CDN problem, not a database problem" is.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>You only need three outputs from this stage: peak QPS, total storage, and peak bandwidth. Everything you compute is in service of one of those three. Say each number out loud with its unit, then move on.</div>
+      </div>
+    </section>
+
+    <!-- ── 2. NUMBERS TO MEMORIZE ─────────────────────────────────── -->
+    <section class="section" id="numbers">
+      <div class="section-header">
+        <div class="section-icon icon-green">🔢</div>
+        <h2>Numbers to Memorize</h2>
+        <span class="section-tag">powers · latency · throughput · time</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>You can't derive these in the room, so carry them in. Four small tables cover almost every question. Round everything; the point is the ratio between numbers, not the numbers themselves.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Powers of two → data sizes</span>
+          <span class="card-badge badge-green">Sizing</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Power</th><th>≈ Value</th><th>Name</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2^10</td><td>1 thousand</td><td>Kilobyte (KB)</td></tr>
+            <tr><td>2^20</td><td>1 million</td><td>Megabyte (MB)</td></tr>
+            <tr><td>2^30</td><td>1 billion</td><td>Gigabyte (GB)</td></tr>
+            <tr><td>2^40</td><td>1 trillion</td><td>Terabyte (TB)</td></tr>
+            <tr><td>2^50</td><td>1 quadrillion</td><td>Petabyte (PB)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Latency numbers, rounded</span>
+          <span class="card-badge badge-green">Every engineer should know</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Operation</th><th>Time</th><th>What it tells you</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>L1 cache reference</td><td>1 ns</td><td>The floor. Everything is measured against this.</td></tr>
+            <tr><td>Main memory reference</td><td>100 ns</td><td>~100× slower than L1, still effectively free.</td></tr>
+            <tr><td>Read 1 MB from memory</td><td>250 µs</td><td>RAM is fast but not infinite; big scans still cost.</td></tr>
+            <tr><td>SSD random read</td><td>100 µs</td><td>~1000× slower than memory. Cache to avoid it.</td></tr>
+            <tr><td>Read 1 MB from SSD</td><td>1 ms</td><td>~4× the memory read. SSD is closer to RAM than to disk.</td></tr>
+            <tr><td>Datacenter round trip</td><td>0.5 ms</td><td>A network hop inside one region is cheap.</td></tr>
+            <tr><td>Disk seek (rotational)</td><td>10 ms</td><td>~100,000× a memory reference. Random disk I/O is death.</td></tr>
+            <tr><td>Read 1 MB from disk</td><td>20 ms</td><td>Sequential disk is tolerable; random is not.</td></tr>
+            <tr><td>Round trip US ↔ Europe</td><td>150 ms</td><td>Cross-region on the request path is poison.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Throughput rules of thumb</span>
+            <span class="card-badge badge-green">Capacity</span>
+          </div>
+          <table class="ref-table">
+            <thead>
+              <tr><th>Resource</th><th>Rough ceiling</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>App server (simple req)</td><td>~10K QPS</td></tr>
+              <tr><td>SSD</td><td>~100K IOPS, ~1 GB/s</td></tr>
+              <tr><td>DB primary (writes)</td><td>~a few K/s</td></tr>
+              <tr><td>Redis / cache node</td><td>~100K ops/s</td></tr>
+              <tr><td>1 Gbps link</td><td>~125 MB/s</td></tr>
+              <tr><td>10 Gbps link</td><td>~1.25 GB/s</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Time, rounded</span>
+            <span class="card-badge badge-green">The key trick</span>
+          </div>
+          <table class="ref-table">
+            <thead>
+              <tr><th>Interval</th><th>Seconds</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Per day</td><td>86,400 → 100K</td></tr>
+              <tr><td>Per month</td><td>~2.5 million</td></tr>
+              <tr><td>Per year</td><td>~30 million</td></tr>
+            </tbody>
+          </table>
+          <div class="card-body" style="padding-top:12px">
+            <p>Rounding a day to <strong>10<sup>5</sup> seconds</strong> is the single most useful move in this whole page. It turns "requests per day ÷ seconds per day" into a clean shift of the decimal point.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>The exact values drift with hardware, and nobody grades you on 100 µs vs 150 µs. What you're being tested on is the <em>ratios</em>: memory is ~1000× faster than SSD, SSD is ~10× faster than disk seeks, a cross-region hop is ~300× a local one. Those gaps decide architecture.</div>
+      </div>
+    </section>
+
+    <!-- ── 3. QPS ─────────────────────────────────────────────────── -->
+    <section class="section" id="qps">
+      <div class="section-header">
+        <div class="section-icon icon-gold">⚡</div>
+        <h2>Estimating QPS</h2>
+        <span class="section-tag">DAU → average → peak</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>The derivation is always the same four steps: start from daily active users, multiply by how many times each one hits the feature per day, divide by seconds per day for the average, then multiply by a peak factor because traffic is never flat.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  ┌──────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────┐     ┌──────────┐
+  │  100M    │  ×  │  5 requests  │  =  │  500M reqs  │  ÷  │ 100K sec │  =  │ 5K QPS   │
+  │   DAU    │     │ per user/day │     │  per day    │     │ per day  │     │ average  │
+  └──────────┘     └──────────────┘     └─────────────┘     └──────────┘     └────┬─────┘
+                                                                                  │
+                                            peak factor ×2 to ×5 (here ×3)        │
+                                                                                  ▼
+                                                                            ┌──────────┐
+                                                                            │ 15K QPS  │
+                                                                            │   peak   │
+                                                                            └──────────┘</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Worked example: a social feed</span>
+          <span class="card-badge badge-gold">Step by step</span>
+        </div>
+        <div class="card-body">
+          <ul>
+            <li><strong>DAU:</strong> 100M users open the app on a given day.</li>
+            <li><strong>Actions per user:</strong> each refreshes the feed ~5 times → 500M feed reads/day.</li>
+            <li><strong>Average QPS:</strong> 500M ÷ 100K seconds = <strong>5,000 QPS</strong>.</li>
+            <li><strong>Peak QPS:</strong> traffic clusters around evenings and events, so ×3 → <strong>15,000 QPS</strong>.</li>
+            <li><strong>Sanity check:</strong> one app server handles ~10K simple QPS, so this is a handful of machines plus headroom, not a heroic system. That feels right for a read of a cached feed.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>The peak multiplier is where designs quietly break. Average load provisions nothing useful, because your system dies at the peak, not the mean. Pick 2× for smooth global traffic, 5× or more for spiky, event-driven, or timezone-clustered load. State which and why.</div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>Separate read QPS from write QPS from the start. A 100:1 read/write ratio is the tell that this is a caching and read-replica problem (<a href="caching.html">Caching</a>), while a write-dominated number pushes you toward sharding and queues (<a href="sharding-partitioning.html">Sharding</a>). The ratio shapes the whole design, so surface it here (<a href="design-process.html">Design Process</a>).</div>
+      </div>
+    </section>
+
+    <!-- ── 4. STORAGE ─────────────────────────────────────────────── -->
+    <section class="section" id="storage">
+      <div class="section-header">
+        <div class="section-icon icon-purple">💾</div>
+        <h2>Estimating Storage</h2>
+        <span class="section-tag">size × rate × retention × replicas</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Storage is a multiplication: how big each object is, times how many you write per day, times how long you keep them, times how many copies you hold. The trap is treating all data as one number. Split it: small metadata scales differently from large payloads, and one of them usually dwarfs the other.</p>
+      </div>
+
+      <div class="diagram">
+<pre>  writes/day        object size        retention           replication
+  200M tweets   ×   500 bytes     ×    365 days      ×      3 copies
+       │                │                  │                    │
+       └──── 100 GB/day ┘                  │                    │
+                 └─────────── 36 TB/year ──┘                    │
+                                     └──────────── ~110 TB stored ┘</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Worked example: tweets for a year</span>
+          <span class="card-badge badge-purple">Metadata vs payload</span>
+        </div>
+        <div class="card-body">
+          <p><strong>Text and metadata.</strong> 100M users post ~2 tweets/day → 200M tweets/day. Text plus IDs, timestamps and user reference is ~500 bytes.</p>
+          <ul>
+            <li>Per day: 200M × 500 B = <strong>100 GB/day</strong>.</li>
+            <li>Per year: 100 GB × 365 ≈ <strong>36 TB/year</strong>.</li>
+            <li>With 3× replication (<a href="replication.html">Replication</a>): ≈ <strong>110 TB</strong>. Fits on a modest cluster.</li>
+          </ul>
+          <p><strong>Media.</strong> Say 10% of tweets carry a 200 KB image → 20M images/day.</p>
+          <ul>
+            <li>Per day: 20M × 200 KB = <strong>4 TB/day</strong>.</li>
+            <li>Per year: ≈ <strong>1.5 PB/year</strong>, and ≈ <strong>4.4 PB</strong> replicated.</li>
+          </ul>
+          <p>The image bytes are <strong>40× the text bytes</strong>. This design is a blob-storage-and-CDN problem wearing a database costume. Say that out loud, then keep media out of the database entirely (<a href="specialized-stores.html">Specialized Stores</a>).</p>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div>This is the moment to name the real bottleneck. When payload dwarfs metadata, the interviewer is watching for whether you split them: metadata in a database, payload in object storage with a pointer, delivery through a CDN. Candidates who store image bytes in Postgres lose the thread here.</div>
+      </div>
+    </section>
+
+    <!-- ── 5. BANDWIDTH & MEMORY ──────────────────────────────────── -->
+    <section class="section" id="bandwidth">
+      <div class="section-header">
+        <div class="section-icon icon-red">📶</div>
+        <h2>Bandwidth &amp; Memory</h2>
+        <span class="section-tag">ingress · egress · cache sizing</span>
+      </div>
+
+      <div class="card-body" style="padding-bottom:0">
+        <p>Bandwidth falls straight out of the storage math: a per-day byte total divided by seconds per day is a byte rate. Split it two ways. <strong>Ingress</strong> is what you take in (roughly your write volume). <strong>Egress</strong> is what you serve out, and on a read-heavy system it's larger by the read/write ratio.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Bandwidth from the tweet example</span>
+          <span class="card-badge badge-red">Ingress vs egress</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Flow</th><th>Rate</th><th>Consequence</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Text ingress</td><td>1 MB/s</td><td>100 GB/day ÷ 100K s. Trivial.</td></tr>
+            <tr><td>Media ingress</td><td>40 MB/s</td><td>4 TB/day ÷ 100K s. One fat link handles it.</td></tr>
+            <tr><td>Media egress (100:1 reads)</td><td>4 GB/s</td><td>40 MB/s × 100. No origin serves this; you need a CDN.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <span class="callout-icon">ℹ️</span>
+        <div>Egress is where cost lives. Reads outnumber writes, payloads leave more often than they arrive, and cross-region or internet egress is billed. The 4 GB/s number is the argument for pushing bytes to the edge and never touching origin on a cache hit (<a href="networking-basics.html">Networking Basics</a>).</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Cache sizing with the 80/20 rule</span>
+          <span class="card-badge badge-red">Memory</span>
+        </div>
+        <div class="card-body">
+          <p>You rarely cache everything. Roughly 20% of the data serves 80% of the reads: recent tweets, popular items, active users. Size the cache to the hot set, not the corpus.</p>
+          <ul>
+            <li>Daily text written: ~100 GB. The hot working set that reads actually touch is a fraction of that.</li>
+            <li>Cache the hot 20% ≈ <strong>20 GB</strong>, which fits in the RAM of a single cache node with room to spare.</li>
+            <li>Lesson: for small-payload, read-heavy systems, the working set fits in memory. That's the same insight that makes a <a href="url-shortener.html">URL shortener</a> cheap, and it's why <a href="caching.html">caching</a> is the highest-leverage move you have.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 6. ROUNDING ────────────────────────────────────────────── -->
+    <section class="section" id="rounding">
+      <div class="section-header">
+        <div class="section-icon icon-gold">✂️</div>
+        <h2>Rounding Discipline</h2>
+        <span class="section-tag">round hard, keep units</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">How to keep the math cheap and honest</span>
+          <span class="card-badge badge-gold">Discipline</span>
+        </div>
+        <div class="card-body">
+          <ul>
+            <li><strong>Round to one significant figure.</strong> 86,400 becomes 100K, 365 becomes 400 (or just leave the year as ~30M seconds). You're finding the order of magnitude, not balancing a ledger.</li>
+            <li><strong>Keep units on every line.</strong> Bytes/day, GB, QPS, MB/s. Half of all estimation errors are a lost factor of 1000 from dropping a unit. The unit is the error check.</li>
+            <li><strong>Carry powers of ten, not commas.</strong> 500M is 5 × 10<sup>8</sup>; 100K seconds is 10<sup>5</sup>. Dividing is subtracting exponents: 10<sup>8</sup> ÷ 10<sup>5</sup> = 10<sup>3</sup> = a few thousand QPS.</li>
+            <li><strong>Sanity-check against a known ceiling.</strong> 15K peak QPS against ~10K per server means a few machines. 4 GB/s egress against a 1.25 GB/s link means it cannot be one origin. The check catches the dropped-1000 error instantly.</li>
+            <li><strong>Stop when the number decides the design.</strong> Once you know it's "TB not PB" or "CDN not database," the estimate has done its job. More digits are theater.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div>Precision is a trap that eats interview minutes. Nobody wants 4.38 PB; they want "single-digit petabytes, so object storage, tiered, with lifecycle expiry." Spend the time you saved on the design, which is what's actually being graded.</div>
+      </div>
+    </section>
+
+    <!-- ── 99. QUICK REFERENCE ────────────────────────────────────── -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon icon-blue">📋</div>
+        <h2>Quick Reference</h2>
+        <span class="section-tag">the numbers on one card</span>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Memorized numbers</span>
+          <span class="card-badge badge-blue">Carry these in</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Quantity</th><th>Value</th><th>Note</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Seconds/day</td><td>~100K (10^5)</td><td>The workhorse. Round 86,400 up.</td></tr>
+            <tr><td>Seconds/year</td><td>~30M</td><td>For retention math.</td></tr>
+            <tr><td>KB / MB / GB / TB / PB</td><td>10^3 … 10^15</td><td>Each step is ×1000.</td></tr>
+            <tr><td>Memory reference</td><td>100 ns</td><td>Effectively free.</td></tr>
+            <tr><td>SSD random read</td><td>100 µs</td><td>~1000× memory.</td></tr>
+            <tr><td>Disk seek</td><td>10 ms</td><td>Avoid random disk I/O.</td></tr>
+            <tr><td>Same-region round trip</td><td>0.5 ms</td><td>Cheap.</td></tr>
+            <tr><td>Cross-region round trip</td><td>~150 ms</td><td>Never sync on the request path.</td></tr>
+            <tr><td>App server</td><td>~10K QPS</td><td>Divide peak QPS by this for fleet size.</td></tr>
+            <tr><td>1 / 10 Gbps link</td><td>125 / 1250 MB/s</td><td>Check egress against this.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">The standard derivations</span>
+          <span class="card-badge badge-blue">Formulas</span>
+        </div>
+        <table class="ref-table">
+          <thead>
+            <tr><th>Target</th><th>Formula</th><th>Then</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Average QPS</td><td>DAU × req/user ÷ 100K</td><td>× 2–5 for peak</td></tr>
+            <tr><td>Fleet size</td><td>peak QPS ÷ ~10K</td><td>+ headroom &amp; redundancy</td></tr>
+            <tr><td>Storage/year</td><td>obj size × writes/day × 365</td><td>× ~3 for replicas</td></tr>
+            <tr><td>Ingress</td><td>bytes written/day ÷ 100K</td><td>≈ write bandwidth</td></tr>
+            <tr><td>Egress</td><td>ingress × read/write ratio</td><td>&gt; link capacity → CDN</td></tr>
+            <tr><td>Cache size</td><td>hot-set bytes (~20% of daily)</td><td>fit in RAM if you can</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="toc-nav">
+    <div class="toc-title">On this page</div>
+    <ul class="toc">
+      <li><a href="#why">1: Why Estimate at All</a></li>
+      <li><a href="#numbers">2: Numbers to Memorize</a></li>
+      <li><a href="#qps">3: Estimating QPS</a></li>
+      <li><a href="#storage">4: Estimating Storage</a></li>
+      <li><a href="#bandwidth">5: Bandwidth &amp; Memory</a></li>
+      <li><a href="#rounding">6: Rounding Discipline</a></li>
+      <li><a href="#reference">99: Quick Reference</a></li>
+    </ul>
+  </nav>
+
+</div>
+
+</body>
+</html>
